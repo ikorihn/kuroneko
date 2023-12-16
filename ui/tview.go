@@ -1,135 +1,115 @@
 package ui
 
 import (
+	"fmt"
+	"io"
+	"net/http"
+	"slices"
+	"time"
+
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
 
-type ui struct {
-	app     *tview.Application
-	curTime *tview.TableCell
-
-	inputField *tview.InputField
+var httpMethods = []string{
+	http.MethodGet,
+	http.MethodPost,
+	http.MethodPut,
+	http.MethodPatch,
+	http.MethodDelete,
 }
 
-func NewUi() *ui {
+type UI struct {
+	app      *tview.Application
+	rootView *tview.Grid
+
+	history      *tview.List
+	inputView    *tview.Grid
+	inputMethod  *tview.DropDown
+	inputUrl     *tview.InputField
+	responseText *tview.TextView
+	footerText   *tview.TextView
+}
+
+func NewUi() *UI {
 	app := tview.NewApplication()
-	u := &ui{
+	ui := &UI{
 		app: app,
 	}
-	u.buildApplication()
 
-	return u
+	ui.app = tview.NewApplication()
+
+	ui.history = tview.NewList().ShowSecondaryText(true).SetSecondaryTextColor(tcell.ColorDimGray)
+	ui.history.SetTitle("History").SetBorder(true)
+
+	ui.inputMethod = tview.NewDropDown().
+		SetLabel("Select method").
+		SetOptions(httpMethods, nil)
+	ui.inputUrl = tview.NewInputField()
+	ui.inputUrl.
+		SetLabel("URL: ").
+		SetDoneFunc(func(key tcell.Key) {
+			switch key {
+			case tcell.KeyEnter:
+				url := ui.inputUrl.GetText()
+				_, method := ui.inputMethod.GetCurrentOption()
+				ui.footerText.SetText(fmt.Sprintf("Execute %s %s", method, url))
+
+				req, err := http.NewRequest(method, url, nil)
+				if err != nil {
+					ui.footerText.SetText(err.Error()).SetTextColor(tcell.ColorRed)
+				}
+
+				res, err := http.DefaultClient.Do(req)
+				if err != nil {
+					ui.footerText.SetText(err.Error()).SetTextColor(tcell.ColorRed)
+				}
+
+				defer res.Body.Close()
+				b, err := io.ReadAll(res.Body)
+				if err != nil {
+					ui.footerText.SetText(err.Error()).SetTextColor(tcell.ColorRed)
+				}
+
+				ui.responseText.SetText(string(b))
+
+				executedTime := time.Now()
+
+				ui.history.AddItem(fmt.Sprintf("%s %s", method, url), executedTime.Format(time.RFC3339), 0, func() {
+					ui.inputMethod.SetCurrentOption(slices.Index(httpMethods, method))
+					ui.inputUrl.SetText(url)
+					ui.responseText.SetText(string(b))
+				})
+			}
+		})
+
+	ui.inputView = tview.NewGrid().SetRows(1).
+		AddItem(ui.inputMethod, 0, 0, 1, 1, 0, 0, true).
+		AddItem(ui.inputUrl, 0, 1, 1, 1, 0, 0, true)
+
+	ui.responseText = tview.NewTextView()
+	ui.responseText.SetTitle("Response").SetBorder(true)
+
+	ui.footerText = tview.NewTextView().SetTextAlign(tview.AlignCenter).SetText("footer").SetTextColor(tcell.ColorGray)
+
+	navigation := tview.NewGrid().SetRows(0).
+		AddItem(ui.history, 0, 0, 1, 1, 0, 0, true)
+	reqAndRes := tview.NewGrid().SetRows(0, 0).
+		AddItem(ui.inputView, 0, 0, 1, 1, 0, 0, false).
+		AddItem(ui.responseText, 1, 0, 9, 1, 0, 0, false)
+	ui.rootView = tview.NewGrid().
+		SetRows(0, 2).
+		SetColumns(40, 0).
+		SetBorders(false).
+		AddItem(navigation, 0, 0, 1, 1, 0, 0, true).
+		AddItem(reqAndRes, 0, 1, 1, 1, 0, 0, false).
+		AddItem(ui.footerText, 1, 0, 1, 2, 0, 0, false)
+
+	ui.setupKeyboard()
+
+	return ui
 }
 
-func (u *ui) Run() error {
-	return u.app.Run()
-}
-
-func (u *ui) buildApplication() {
-	infoPanel := u.createInput()
-	commandList := u.createNavigation()
-	layout := u.createLayout(commandList, infoPanel)
-	pages := tview.NewPages()
-	pages.AddPage("main", layout, true, true)
-
-	u.app.SetRoot(pages, true)
-
-}
-
-func (u *ui) createInput() *tview.Flex {
-	textView := tview.NewTextView()
-	textView.SetTitle("textView")
-	textView.SetBorder(true)
-
-	inputField := tview.NewInputField()
-	inputField.SetLabel("input: ")
-	inputField.SetTitle("inputField").
-		SetBorder(true)
-
-	inputField.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		switch event.Key() {
-		case tcell.KeyEnter:
-			textView.SetText(textView.GetText(true) + inputField.GetText() + "\n")
-			inputField.SetText("")
-			return nil
-		}
-		return event
-	})
-
-	u.inputField = inputField
-
-	infoPanel := tview.NewFlex().SetDirection(tview.FlexRow).
-		AddItem(inputField, 3, 0, true).
-		AddItem(textView, 0, 1, false)
-	return infoPanel
-}
-
-func (u *ui) createNavigation() (commandList *tview.List) {
-	commandList = tview.NewList()
-	commandList.SetBorder(true).SetTitle("Command")
-
-	commandList.AddItem("Test", "", 'p', func() {
-		u.app.SetFocus(u.inputField)
-	})
-	commandList.AddItem("Quit", "", 'q', func() {
-		u.app.Stop()
-	})
-	return commandList
-}
-
-func (u *ui) createInfoPanel() (infoPanel *tview.Flex) {
-
-	infoTable := tview.NewTable()
-	infoTable.SetBorder(true).SetTitle("Information")
-
-	cnt := 0
-	infoTable.SetCellSimple(cnt, 0, "Data1:")
-	infoTable.GetCell(cnt, 0).SetAlign(tview.AlignRight)
-	info1 := tview.NewTableCell("aaa")
-	infoTable.SetCell(cnt, 1, info1)
-	cnt++
-
-	infoTable.SetCellSimple(cnt, 0, "Data2:")
-	infoTable.GetCell(cnt, 0).SetAlign(tview.AlignRight)
-	info2 := tview.NewTableCell("bbb")
-	infoTable.SetCell(cnt, 1, info2)
-	cnt++
-
-	infoTable.SetCellSimple(cnt, 0, "Time:")
-	infoTable.GetCell(cnt, 0).SetAlign(tview.AlignRight)
-	u.curTime = tview.NewTableCell("0")
-	infoTable.SetCell(cnt, 1, u.curTime)
-	cnt++
-
-	outputTable := tview.NewTable()
-	outputTable.SetBorder(true).SetTitle("Information")
-
-	cnt = 0
-	outputTable.SetCellSimple(cnt, 0, "Output:")
-	outputTable.GetCell(cnt, 0).SetAlign(tview.AlignRight)
-	output := tview.NewTableCell("123")
-	outputTable.SetCell(cnt, 1, output)
-
-	infoPanel = tview.NewFlex().SetDirection(tview.FlexRow).
-		AddItem(infoTable, 0, 1, false).
-		AddItem(outputTable, 0, 1, false)
-	return infoPanel
-}
-
-func (u *ui) createLayout(cList tview.Primitive, recvPanel tview.Primitive) (layout *tview.Flex) {
-	bodyLayout := tview.NewFlex().SetDirection(tview.FlexColumn).
-		AddItem(cList, 20, 1, true).
-		AddItem(recvPanel, 0, 1, false)
-
-	header := tview.NewTextView()
-	header.SetBorder(true)
-	header.SetText("tview study")
-	header.SetTextAlign(tview.AlignCenter)
-
-	layout = tview.NewFlex().SetDirection(tview.FlexRow).
-		AddItem(header, 3, 1, false).
-		AddItem(bodyLayout, 0, 1, true)
-
-	return layout
+func (u *UI) Run() error {
+	return u.app.SetRoot(u.rootView, true).Run()
 }
