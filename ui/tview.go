@@ -2,12 +2,12 @@ package ui
 
 import (
 	"fmt"
-	"io"
 	"net/http"
 	"slices"
 	"time"
 
 	"github.com/gdamore/tcell/v2"
+	"github.com/ikorihn/kuroneko/controller"
 	"github.com/rivo/tview"
 )
 
@@ -24,11 +24,13 @@ type UI struct {
 	rootView *tview.Grid
 
 	history      *tview.List
-	inputView    *tview.Grid
+	inputForm    *tview.Form
 	inputMethod  *tview.DropDown
 	inputUrl     *tview.InputField
 	responseText *tview.TextView
 	footerText   *tview.TextView
+
+	requestBody []byte
 }
 
 func NewUi() *UI {
@@ -43,49 +45,30 @@ func NewUi() *UI {
 	ui.history.SetTitle("History").SetBorder(true)
 
 	ui.inputMethod = tview.NewDropDown().
-		SetLabel("Select method").
-		SetOptions(httpMethods, nil)
+		SetLabel("Method: ").
+		SetOptions(httpMethods, nil).
+		SetCurrentOption(0)
 	ui.inputUrl = tview.NewInputField()
-	ui.inputUrl.
-		SetLabel("URL: ").
-		SetDoneFunc(func(key tcell.Key) {
-			switch key {
-			case tcell.KeyEnter:
-				url := ui.inputUrl.GetText()
-				_, method := ui.inputMethod.GetCurrentOption()
-				ui.footerText.SetText(fmt.Sprintf("Execute %s %s", method, url))
+	ui.inputUrl.SetLabel("URL: ")
 
-				req, err := http.NewRequest(method, url, nil)
+	ui.inputForm = tview.NewForm().
+		AddFormItem(ui.inputMethod).
+		AddFormItem(ui.inputUrl).
+		AddButton("Body", func() {
+			ui.app.Suspend(func() {
+				body, err := controller.EditBody()
 				if err != nil {
-					ui.footerText.SetText(err.Error()).SetTextColor(tcell.ColorRed)
+					ui.showErr(err)
+					return
 				}
 
-				res, err := http.DefaultClient.Do(req)
-				if err != nil {
-					ui.footerText.SetText(err.Error()).SetTextColor(tcell.ColorRed)
-				}
-
-				defer res.Body.Close()
-				b, err := io.ReadAll(res.Body)
-				if err != nil {
-					ui.footerText.SetText(err.Error()).SetTextColor(tcell.ColorRed)
-				}
-
-				ui.responseText.SetText(string(b))
-
-				executedTime := time.Now()
-
-				ui.history.AddItem(fmt.Sprintf("%s %s", method, url), executedTime.Format(time.RFC3339), 0, func() {
-					ui.inputMethod.SetCurrentOption(slices.Index(httpMethods, method))
-					ui.inputUrl.SetText(url)
-					ui.responseText.SetText(string(b))
-				})
-			}
+				ui.requestBody = body
+			})
+		}).
+		AddButton("Send", func() {
+			ui.Send()
 		})
-
-	ui.inputView = tview.NewGrid().SetRows(1).
-		AddItem(ui.inputMethod, 0, 0, 1, 1, 0, 0, true).
-		AddItem(ui.inputUrl, 0, 1, 1, 1, 0, 0, true)
+	ui.inputForm.SetTitle("Request").SetBorder(true)
 
 	ui.responseText = tview.NewTextView()
 	ui.responseText.SetTitle("Response").SetBorder(true)
@@ -95,8 +78,8 @@ func NewUi() *UI {
 	navigation := tview.NewGrid().SetRows(0).
 		AddItem(ui.history, 0, 0, 1, 1, 0, 0, true)
 	reqAndRes := tview.NewGrid().SetRows(0, 0).
-		AddItem(ui.inputView, 0, 0, 1, 1, 0, 0, false).
-		AddItem(ui.responseText, 1, 0, 9, 1, 0, 0, false)
+		AddItem(ui.inputForm, 0, 0, 1, 1, 0, 0, false).
+		AddItem(ui.responseText, 1, 0, 1, 1, 0, 0, false)
 	ui.rootView = tview.NewGrid().
 		SetRows(0, 2).
 		SetColumns(40, 0).
@@ -111,5 +94,43 @@ func NewUi() *UI {
 }
 
 func (u *UI) Run() error {
-	return u.app.SetRoot(u.rootView, true).Run()
+	return u.app.SetRoot(u.rootView, true).SetFocus(u.inputForm).Run()
+}
+
+func (u *UI) Send() error {
+	u.responseText.Clear()
+
+	url := u.inputUrl.GetText()
+	_, method := u.inputMethod.GetCurrentOption()
+	u.footerText.SetText(fmt.Sprintf("Execute %s %s", method, url))
+
+	res, err := controller.Send(method, url)
+	if err != nil {
+		u.showErr(err)
+		return err
+	}
+
+	u.responseText.SetText(string(res.Body))
+
+	executedTime := time.Now()
+
+	u.history.AddItem(fmt.Sprintf("%s %s", method, url), executedTime.Format(time.RFC3339), 0, func() {
+		u.inputMethod.SetCurrentOption(slices.Index(httpMethods, method))
+		u.inputUrl.SetText(url)
+		u.responseText.SetText(string(res.Body))
+	})
+
+	u.app.SetFocus(u.responseText)
+
+	u.requestBody = nil
+
+	return nil
+}
+
+func (u *UI) showErr(err error) {
+	u.footerText.SetText(err.Error()).SetTextColor(tcell.ColorRed)
+}
+
+func (u *UI) showInfo(msg string) {
+	u.footerText.SetText(msg).SetTextColor(tcell.ColorGreen)
 }
