@@ -1,11 +1,10 @@
 package controller
 
 import (
+	"bytes"
 	"io"
 	"net/http"
 )
-
-var httpClient *http.Client = http.DefaultClient
 
 type Response struct {
 	StatusCode    int
@@ -16,13 +15,24 @@ type Response struct {
 	Request *http.Request
 }
 
-func Send(method, requestUrl string) (*Response, error) {
-	req, err := http.NewRequest(method, requestUrl, nil)
+func (c *Controller) Send(method, requestUrl, contentType string, headers map[string]string, body []byte) (*Response, error) {
+	var bbuf io.Reader
+	if body != nil {
+		bbuf = bytes.NewBuffer(body)
+	}
+	req, err := http.NewRequest(method, requestUrl, bbuf)
 	if err != nil {
 		return nil, err
 	}
 
-	res, err := httpClient.Do(req)
+	if contentType != "none" {
+		req.Header.Add("Content-Type", contentType)
+	}
+	for k, v := range headers {
+		req.Header.Add(k, v)
+	}
+
+	res, err := c.httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}

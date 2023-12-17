@@ -6,7 +6,7 @@ import (
 	"os/exec"
 )
 
-func EditBody() ([]byte, error) {
+func (c *Controller) EditBody() ([]byte, error) {
 	editor := os.Getenv("EDITOR")
 	if editor == "" {
 		editor = "vim"
