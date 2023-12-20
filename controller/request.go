@@ -4,18 +4,29 @@ import (
 	"bytes"
 	"io"
 	"net/http"
+	"time"
 )
 
-type Response struct {
-	StatusCode    int
-	Header        http.Header
-	Body          []byte
-	ContentLength int
+type History struct {
+	ExecutionTime time.Time
 
-	Request *http.Request
+	Request  Request
+	Response Response
+}
+type Request struct {
+	Method string
+	Url    string
+	Header map[string]string
+	Body   []byte
+}
+type Response struct {
+	Body          []byte
+	Header        http.Header
+	StatusCode    int
+	ContentLength int
 }
 
-func (c *Controller) Send(method, requestUrl, contentType string, headers map[string]string, body []byte) (*Response, error) {
+func (c *Controller) Send(method, requestUrl, contentType string, headers map[string]string, body []byte) (*History, error) {
 	var bbuf io.Reader
 	if body != nil {
 		bbuf = bytes.NewBuffer(body)
@@ -25,7 +36,7 @@ func (c *Controller) Send(method, requestUrl, contentType string, headers map[st
 		return nil, err
 	}
 
-	if contentType != "none" {
+	if contentType != "" {
 		req.Header.Add("Content-Type", contentType)
 	}
 	for k, v := range headers {
@@ -43,11 +54,12 @@ func (c *Controller) Send(method, requestUrl, contentType string, headers map[st
 		return nil, err
 	}
 
-	return &Response{
+	return &History{
 		StatusCode:    res.StatusCode,
 		Header:        res.Header,
 		Body:          b,
 		ContentLength: int(res.ContentLength),
+		ExecutionTime: time.Now(),
 		Request:       req,
 	}, err
 }
