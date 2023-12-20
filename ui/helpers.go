@@ -8,34 +8,29 @@ import (
 	"github.com/rivo/tview"
 )
 
-func (u *UI) send() error {
+func (u *UI) send(r *request) error {
 	u.responseText.Clear()
 
-	url := u.inputUrl.GetText()
-	_, method := u.inputMethod.GetCurrentOption()
-	_, contentType := u.requestContentType.GetCurrentOption()
+	url := r.Url
+	method := r.Method
+	contentType := r.ContentType
 	u.footerText.SetText(fmt.Sprintf("Execute %s %s", method, url))
 
 	headerMap := make(map[string]string, 0)
-	for _, v := range u.headers {
+	for _, v := range r.Header {
 		sp := strings.Split(v, ":")
 		headerMap[sp[0]] = sp[1]
 	}
 
-	res, err := u.controller.Send(method, url, contentType, headerMap, u.requestBody)
+	res, err := u.controller.Send(method, url, contentType, headerMap, r.Body)
 	if err != nil {
 		u.showErr(err)
 		return err
 	}
 
 	u.response = res
-
 	u.responseText.SetText(string(res.Body))
-
 	u.historyViewModel.Add(*res)
-
-	u.requestBody = nil
-
 	return nil
 }
 
@@ -47,24 +42,15 @@ func (u *UI) showInfo(msg string) {
 	u.footerText.SetText(msg).SetTextColor(tcell.ColorGreen)
 }
 
-func (u *UI) showInputDialog(text string, label string, width int, backTo tview.Primitive, callback func(text string)) {
-	input := tview.NewInputField().SetText(text)
-	input.SetLabel(label).SetLabelWidth(width).SetDoneFunc(func(key tcell.Key) {
-		if key == tcell.KeyEnter {
-			callback(input.GetText())
-		}
-		switch key {
-		case tcell.KeyEnter, tcell.KeyEsc:
-			u.rootView.RemovePage("input")
-			u.app.SetRoot(u.rootView, true).SetFocus(backTo)
-		}
-	})
+func (u *UI) showInputDialog(backTo tview.Primitive, formTransformer func(*tview.Form), okHandler func(*tview.Form)) {
+	input := tview.NewForm()
+	input.AddButton("OK", func() {
+		okHandler(input)
 
-	// inputForm := tview.NewForm().
-	// 	AddInputField(label, "", width, nil, callback).
-	// 	AddButton("OK", func() {
-	// 		callback(input.GetText())
-	// 	})
+		u.rootView.RemovePage("input")
+		u.app.SetRoot(u.rootView, true).SetFocus(backTo)
+	})
+	formTransformer(input)
 
 	modal := func(p tview.Primitive, width, height int) tview.Primitive {
 		return tview.NewGrid().

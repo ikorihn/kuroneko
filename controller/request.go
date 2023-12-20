@@ -8,22 +8,13 @@ import (
 )
 
 type History struct {
+	StatusCode    int
+	Header        http.Header
+	Body          []byte
+	ContentLength int
 	ExecutionTime time.Time
 
-	Request  Request
-	Response Response
-}
-type Request struct {
-	Method string
-	Url    string
-	Header map[string]string
-	Body   []byte
-}
-type Response struct {
-	Body          []byte
-	Header        http.Header
-	StatusCode    int
-	ContentLength int
+	Request *http.Request
 }
 
 func (c *Controller) Send(method, requestUrl, contentType string, headers map[string]string, body []byte) (*History, error) {

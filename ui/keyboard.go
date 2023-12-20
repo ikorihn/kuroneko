@@ -1,6 +1,8 @@
 package ui
 
 import (
+	"fmt"
+
 	"github.com/atotto/clipboard"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
@@ -39,10 +41,10 @@ func (u *UI) setupKeyboard() {
 				return nil
 			}
 		case tcell.KeyCtrlR:
-			u.app.SetRoot(u.rootView, true).SetFocus(u.inputForm)
+			u.app.SetRoot(u.rootView, true).SetFocus(u.requestViewModel.requestForm)
 			return nil
 		case tcell.KeyCtrlS:
-			u.send()
+			u.send(u.requestViewModel.Request)
 			return nil
 		}
 
@@ -64,26 +66,42 @@ func (u *UI) setupKeyboard() {
 
 		return event
 	})
-	u.headerList.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+
+	u.requestViewModel.headerList.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		headerList := u.requestViewModel.headerList
 		switch event.Rune() {
 		case 'd':
-			curIdx := u.headerList.GetCurrentItem()
-			u.headerList.RemoveItem(curIdx)
-			u.headers = append(u.headers[:curIdx], u.headers[curIdx+1:]...)
+			curIdx := headerList.GetCurrentItem()
+			headerList.RemoveItem(curIdx)
+			u.requestViewModel.Request.Header = append(u.requestViewModel.Request.Header[:curIdx], u.requestViewModel.Request.Header[curIdx+1:]...)
 			return nil
 		}
 
 		switch event.Key() {
 		case tcell.KeyEnter:
-			curIdx := u.headerList.GetCurrentItem()
-			curText, _ := u.headerList.GetItemText(curIdx)
-			u.showInputDialog(curText, "edit header", 20, u.headerList, func(text string) {
-				u.headerList.RemoveItem(curIdx)
-				u.headerList.InsertItem(curIdx, text, "", 20, nil)
-				u.headers[curIdx] = text
-			})
+			curIdx := headerList.GetCurrentItem()
+			curText, _ := headerList.GetItemText(curIdx)
+
+			u.showInputDialog(headerList,
+				func(form *tview.Form) {
+					form.AddInputField("Name", curText, 20, nil, func(text string) {
+					})
+					form.AddInputField("Value", "", 20, nil, func(text string) {
+					})
+				},
+				func(form *tview.Form) {
+					name := form.GetFormItemByLabel("Name").(*tview.InputField).GetText()
+					value := form.GetFormItemByLabel("Value").(*tview.InputField).GetText()
+
+					headerItem := fmt.Sprintf("%s:%s", name, value)
+
+					headerList.RemoveItem(curIdx)
+					headerList.InsertItem(curIdx, headerItem, "", 20, nil)
+					u.requestViewModel.Request.Header[curIdx] = headerItem
+				},
+			)
 		case tcell.KeyEsc, tcell.KeyTab:
-			u.app.SetFocus(u.inputForm)
+			u.app.SetFocus(u.requestViewModel.requestForm)
 		}
 
 		return event
