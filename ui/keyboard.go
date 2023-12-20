@@ -29,6 +29,23 @@ func (u *UI) setupKeyboard() {
 	//		return event
 	//	})
 	u.app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		switch event.Key() {
+		case tcell.KeyCtrlT:
+			u.app.SetRoot(u.responseSwitchModal, true).SetFocus(u.responseSwitchModal)
+			return nil
+		case tcell.KeyCtrlH:
+			if _, ok := u.app.GetFocus().(*tview.InputField); !ok {
+				u.app.SetRoot(u.rootView, true).SetFocus(u.historyViewModel.HistoryField)
+				return nil
+			}
+		case tcell.KeyCtrlR:
+			u.app.SetRoot(u.rootView, true).SetFocus(u.inputForm)
+			return nil
+		case tcell.KeyCtrlS:
+			u.send()
+			return nil
+		}
+
 		switch event.Rune() {
 		case 'q':
 			if _, ok := u.app.GetFocus().(*tview.InputField); !ok {
@@ -67,16 +84,6 @@ func (u *UI) setupKeyboard() {
 			})
 		case tcell.KeyEsc, tcell.KeyTab:
 			u.app.SetFocus(u.inputForm)
-		}
-
-		return event
-	})
-
-	u.app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		switch event.Key() {
-		case tcell.KeyCtrlT:
-			u.app.SetRoot(u.responseSwitchModal, true).SetFocus(u.responseSwitchModal)
-			return nil
 		}
 
 		return event
