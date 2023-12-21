@@ -1,10 +1,7 @@
 package ui
 
 import (
-	"fmt"
 	"net/http"
-	"strconv"
-	"strings"
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/ikorihn/kuroneko/controller"
@@ -43,11 +40,9 @@ type UI struct {
 
 	historyViewModel    *historyViewModel
 	requestViewModel    *requestViewModel
-	responseText        *tview.TextView
+	responseViewModel   *responseViewModel
 	responseSwitchModal *tview.Modal
 	footerText          *tview.TextView
-
-	response *controller.History
 }
 
 func NewUi() *UI {
@@ -64,29 +59,16 @@ func NewUi() *UI {
 	ui.historyViewModel.HistoryField.SetTitle("History (Ctrl+H)").SetBorder(true)
 
 	ui.requestViewModel = NewRequestViewModel(ui)
+	ui.responseViewModel = NewResponseViewModel(ui)
 
 	ui.responseSwitchModal = tview.NewModal().
 		SetText("Select response field you want to see").
 		AddButtons([]string{"Body", "Header", "Status"}).
 		SetDoneFunc(func(buttonIndex int, buttonLabel string) {
-			switch buttonLabel {
-			case "Body":
-				ui.responseText.SetText(string(ui.response.Body))
-			case "Header":
-				txt := make([]string, 0)
-				for k := range ui.response.Header {
-					txt = append(txt, fmt.Sprintf("%s: %s", k, ui.response.Header.Get(k)))
-				}
-				ui.responseText.SetText(strings.Join(txt, "\n"))
-			case "Status":
-				ui.responseText.SetText(strconv.Itoa(ui.response.StatusCode))
-			}
+			ui.responseViewModel.Show(buttonLabel)
 
-			ui.app.SetRoot(ui.rootView, true).SetFocus(ui.responseText)
+			ui.app.SetRoot(ui.rootView, true).SetFocus(ui.responseViewModel.responseField)
 		})
-
-	ui.responseText = tview.NewTextView()
-	ui.responseText.SetTitle("Response (Ctrl+T)").SetBorder(true)
 
 	ui.footerText = tview.NewTextView().SetTextAlign(tview.AlignCenter).SetText("footer").SetTextColor(tcell.ColorGray)
 
@@ -95,7 +77,7 @@ func NewUi() *UI {
 	reqAndRes := tview.NewGrid().
 		SetRows(20, 0).
 		AddItem(ui.requestViewModel.Grid, 0, 0, 1, 20, 10, 0, false).
-		AddItem(ui.responseText, 1, 0, 1, 20, 0, 0, false)
+		AddItem(ui.responseViewModel.Grid, 1, 0, 1, 20, 0, 0, false)
 	ui.rootGrid = tview.NewGrid().
 		SetRows(0, 2).
 		SetColumns(40, 0).

@@ -2,9 +2,12 @@ package controller
 
 import (
 	"bytes"
+	"context"
 	"io"
 	"net/http"
 	"time"
+
+	"github.com/tcnksm/go-httpstat"
 )
 
 type History struct {
@@ -14,15 +17,21 @@ type History struct {
 	ContentLength int
 	ExecutionTime time.Time
 
-	Request *http.Request
+	Request  *http.Request
+	HttpStat httpstat.Result
 }
 
-func (c *Controller) Send(method, requestUrl, contentType string, headers map[string]string, body []byte) (*History, error) {
+func (c *Controller) Send(ctx context.Context, method, requestUrl, contentType string, headers map[string]string, body []byte) (*History, error) {
 	var bbuf io.Reader
 	if body != nil {
 		bbuf = bytes.NewBuffer(body)
 	}
-	req, err := http.NewRequest(method, requestUrl, bbuf)
+
+	// collect stats
+	var result httpstat.Result
+	ctx = httpstat.WithHTTPStat(ctx, &result)
+
+	req, err := http.NewRequestWithContext(ctx, method, requestUrl, bbuf)
 	if err != nil {
 		return nil, err
 	}
@@ -52,5 +61,6 @@ func (c *Controller) Send(method, requestUrl, contentType string, headers map[st
 		ContentLength: int(res.ContentLength),
 		ExecutionTime: time.Now(),
 		Request:       req,
+		HttpStat:      result,
 	}, err
 }

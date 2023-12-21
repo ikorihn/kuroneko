@@ -7,6 +7,7 @@ require (
 	github.com/gdamore/tcell/v2 v2.6.1-0.20231203215052-2917c3801e73
 	github.com/mattn/go-runewidth v0.0.14
 	github.com/rivo/tview v0.0.0-20231206124440-5f078138442e
+	github.com/tcnksm/go-httpstat v0.2.0
 )
 
 require (

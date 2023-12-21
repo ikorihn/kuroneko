@@ -57,10 +57,10 @@ func (u *UI) setupKeyboard() {
 		return event
 	})
 
-	u.responseText.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+	u.responseViewModel.responseField.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Rune() {
 		case 'y':
-			clipboard.WriteAll(u.responseText.GetText(false))
+			clipboard.WriteAll(u.responseViewModel.responseField.GetText(false))
 			return nil
 		}
 

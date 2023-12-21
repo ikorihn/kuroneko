@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -9,7 +10,7 @@ import (
 )
 
 func (u *UI) send(r *request) error {
-	u.responseText.Clear()
+	u.responseViewModel.Clear()
 
 	url := r.Url
 	method := r.Method
@@ -22,14 +23,14 @@ func (u *UI) send(r *request) error {
 		headerMap[sp[0]] = sp[1]
 	}
 
-	res, err := u.controller.Send(method, url, contentType, headerMap, r.Body)
+	ctx := context.Background()
+	res, err := u.controller.Send(ctx, method, url, contentType, headerMap, r.Body)
 	if err != nil {
 		u.showErr(err)
 		return err
 	}
 
-	u.response = res
-	u.responseText.SetText(string(res.Body))
+	u.responseViewModel.Update(res)
 	u.historyViewModel.Add(*res)
 	return nil
 }

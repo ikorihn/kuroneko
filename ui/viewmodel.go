@@ -3,6 +3,8 @@ package ui
 import (
 	"fmt"
 	"slices"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/ikorihn/kuroneko/controller"
@@ -92,7 +94,7 @@ func NewRequestViewModel(ui *UI) *requestViewModel {
 		}).
 		AddButton("Send", func() {
 			ui.send(ui.requestViewModel.Request)
-			ui.app.SetFocus(ui.responseText)
+			ui.app.SetFocus(ui.responseViewModel.responseField)
 		})
 
 	grid := tview.NewGrid().
@@ -123,13 +125,57 @@ func (r *requestViewModel) Update(req *request) {
 }
 
 type responseViewModel struct {
-	Response      *controller.History
-	ResponseField *tview.TextView
+	Response *controller.History
+	Grid     *tview.Grid
+
+	responseField *tview.TextView
+	statsText     *tview.TextView
+}
+
+func NewResponseViewModel(ui *UI) *responseViewModel {
+	responseText := tview.NewTextView()
+
+	statsText := tview.NewTextView()
+	statsText.SetTitle("Stats").SetBorder(true)
+
+	grid := tview.NewGrid().
+		SetRows(20).
+		AddItem(responseText, 0, 0, 1, 15, 0, 0, false).
+		AddItem(statsText, 0, 15, 1, 10, 0, 0, false)
+	grid.SetTitle("Response (Ctrl+T)").SetBorder(true)
+
+	return &responseViewModel{
+		Grid:          grid,
+		responseField: responseText,
+		statsText:     statsText,
+	}
 }
 
 func (r *responseViewModel) Update(response *controller.History) {
 	r.Response = response
-	r.ResponseField.SetText(string(response.Body))
+	r.responseField.SetText(string(response.Body))
+	r.statsText.SetText(fmt.Sprintf("%+v", response.HttpStat))
+}
+
+func (r *responseViewModel) Clear() {
+	r.Response = nil
+	r.responseField.Clear()
+	r.statsText.Clear()
+}
+
+func (r *responseViewModel) Show(field string) {
+	switch field {
+	case "Body":
+		r.responseField.SetText(string(r.Response.Body))
+	case "Header":
+		txt := make([]string, 0)
+		for k := range r.Response.Header {
+			txt = append(txt, fmt.Sprintf("%s: %s", k, r.Response.Header.Get(k)))
+		}
+		r.responseField.SetText(strings.Join(txt, "\n"))
+	case "Status":
+		r.responseField.SetText(strconv.Itoa(r.Response.StatusCode))
+	}
 }
 
 type historyViewModel struct {
@@ -146,7 +192,7 @@ func (h *historyViewModel) Add(history controller.History) {
 			Url:         history.Request.URL.String(),
 			ContentType: history.Request.Header.Get("Content-Type"),
 		})
-		h.Parent.responseText.SetText(string(history.Body))
+		h.Parent.responseViewModel.Update(&history)
 		h.Parent.app.SetFocus(h.Parent.requestViewModel.requestForm)
 	})
 }
