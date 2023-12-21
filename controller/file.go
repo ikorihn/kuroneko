@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"io"
 	"os"
 	"os/exec"
 )
@@ -15,18 +14,16 @@ func (c *Controller) EditBody() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	tempFile.Close()
 
-	defer func() {
-		tempFile.Close()
-		os.Remove(tempFile.Name())
-	}()
+	defer os.Remove(tempFile.Name())
 
 	cmd := exec.Command(editor, tempFile.Name())
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	err = cmd.Run()
 
-	body, err := io.ReadAll(tempFile)
+	body, err := os.ReadFile(tempFile.Name())
 
 	return body, err
 }
