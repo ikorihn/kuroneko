@@ -16,6 +16,7 @@ type requestViewModel struct {
 
 	requestForm      *tview.Form
 	headerList       *tview.List
+	bodyText         *tview.TextView
 	inputMethod      *tview.DropDown
 	inputUrl         *tview.InputField
 	inputContentType *tview.DropDown
@@ -47,6 +48,8 @@ func NewRequestViewModel(ui *UI) *requestViewModel {
 		SetSelectedFunc(func(text string, index int) {
 			request.ContentType = text
 		})
+	bodyText := tview.NewTextView()
+	bodyText.SetTitle("Body").SetBorder(true)
 
 	form := tview.NewForm().
 		AddFormItem(inputMethod).
@@ -84,6 +87,7 @@ func NewRequestViewModel(ui *UI) *requestViewModel {
 				}
 
 				request.Body = body
+				bodyText.SetText(string(body))
 			})
 		}).
 		AddButton("Send", func() {
@@ -91,12 +95,12 @@ func NewRequestViewModel(ui *UI) *requestViewModel {
 			ui.app.SetFocus(ui.responseText)
 		})
 
-	form.SetTitle("Request form (Ctrl+R)")
-
-	grid := tview.NewGrid().SetRows(0, 0).
-		AddItem(form, 0, 0, 1, 1, 0, 0, false).
-		AddItem(headerList, 1, 0, 1, 1, 0, 0, false)
-	grid.SetBorder(true)
+	grid := tview.NewGrid().
+		SetRows(10, 20).
+		AddItem(form, 0, 0, 1, 15, 0, 0, false).
+		AddItem(headerList, 1, 0, 9, 15, 10, 0, false).
+		AddItem(bodyText, 0, 15, 10, 5, 0, 0, false)
+	grid.SetBorder(true).SetTitle("Request form (Ctrl+R)")
 
 	return &requestViewModel{
 		Parent:           ui,
@@ -104,6 +108,7 @@ func NewRequestViewModel(ui *UI) *requestViewModel {
 		Grid:             grid,
 		requestForm:      form,
 		headerList:       headerList,
+		bodyText:         bodyText,
 		inputMethod:      inputMethod,
 		inputUrl:         inputUrl,
 		inputContentType: inputContentType,
