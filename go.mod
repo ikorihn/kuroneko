@@ -13,8 +13,10 @@ require (
 require (
 	github.com/gdamore/encoding v1.0.0 // indirect
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
+	github.com/mholt/curl-to-go v0.0.0-20220711160733-c4fb2af58d13 // indirect
 	github.com/rivo/uniseg v0.4.3 // indirect
 	golang.org/x/sys v0.11.0 // indirect
 	golang.org/x/term v0.9.0 // indirect
 	golang.org/x/text v0.12.0 // indirect
+	moul.io/http2curl v1.0.0 // indirect
 )

@@ -9,6 +9,7 @@ import (
 
 	"github.com/ikorihn/kuroneko/controller"
 	"github.com/rivo/tview"
+	"moul.io/http2curl"
 )
 
 type requestViewModel struct {
@@ -163,18 +164,32 @@ func (r *responseViewModel) Clear() {
 	r.statsText.Clear()
 }
 
-func (r *responseViewModel) Show(field string) {
-	switch field {
-	case "Body":
+func (r *responseViewModel) Show(buttonIndex int) {
+	i := 0
+	if i == buttonIndex {
 		r.responseField.SetText(string(r.Response.Body))
-	case "Header":
+		return
+	}
+	i++
+	if i == buttonIndex {
 		txt := make([]string, 0)
 		for k := range r.Response.Header {
 			txt = append(txt, fmt.Sprintf("%s: %s", k, r.Response.Header.Get(k)))
 		}
 		r.responseField.SetText(strings.Join(txt, "\n"))
-	case "Status":
+		return
+	}
+	i++
+	if i == buttonIndex {
 		r.responseField.SetText(strconv.Itoa(r.Response.StatusCode))
+		return
+	}
+	i++
+	if i == buttonIndex {
+		req := r.Response.Request.ToHttpReq()
+		command, _ := http2curl.GetCurlCommand(req)
+		r.responseField.SetText(command.String())
+		return
 	}
 }
 
@@ -186,11 +201,11 @@ type historyViewModel struct {
 
 func (h *historyViewModel) Add(history controller.History) {
 	h.History = append(h.History, history)
-	h.HistoryField.AddItem(fmt.Sprintf("%s %s", history.Request.Method, history.Request.URL.String()), history.ExecutionTime.Format(time.RFC3339), 0, func() {
+	h.HistoryField.AddItem(fmt.Sprintf("%s %s", history.Request.Method, history.Request.Url), history.ExecutionTime.Format(time.RFC3339), 0, func() {
 		h.Parent.requestViewModel.Update(&request{
 			Method:      history.Request.Method,
-			Url:         history.Request.URL.String(),
-			ContentType: history.Request.Header.Get("Content-Type"),
+			Url:         history.Request.Url,
+			ContentType: history.Request.ContentType,
 		})
 		h.Parent.responseViewModel.Update(&history)
 		h.Parent.app.SetFocus(h.Parent.requestViewModel.requestForm)

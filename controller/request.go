@@ -10,6 +10,28 @@ import (
 	"github.com/tcnksm/go-httpstat"
 )
 
+const hdrContentType = "Content-Type"
+
+type Request struct {
+	Method      string
+	Url         string
+	ContentType string
+	Headers     map[string]string
+	Body        []byte
+}
+
+func (r Request) ToHttpReq() *http.Request {
+	b := io.NopCloser(bytes.NewBuffer(r.Body))
+	req, _ := http.NewRequest(r.Method, r.Url, b)
+	if r.ContentType != "" {
+		req.Header.Add(hdrContentType, r.ContentType)
+	}
+	for k, v := range r.Headers {
+		req.Header.Add(k, v)
+	}
+	return req
+}
+
 type History struct {
 	StatusCode    int
 	Header        http.Header
@@ -17,7 +39,7 @@ type History struct {
 	ContentLength int
 	ExecutionTime time.Time
 
-	Request  *http.Request
+	Request  Request
 	HttpStat httpstat.Result
 }
 
@@ -37,7 +59,7 @@ func (c *Controller) Send(ctx context.Context, method, requestUrl, contentType s
 	}
 
 	if contentType != "" {
-		req.Header.Add("Content-Type", contentType)
+		req.Header.Add(hdrContentType, contentType)
 	}
 	for k, v := range headers {
 		req.Header.Add(k, v)
@@ -60,7 +82,13 @@ func (c *Controller) Send(ctx context.Context, method, requestUrl, contentType s
 		Body:          b,
 		ContentLength: int(res.ContentLength),
 		ExecutionTime: time.Now(),
-		Request:       req,
-		HttpStat:      result,
+		Request: Request{
+			Method:      method,
+			Url:         requestUrl,
+			ContentType: contentType,
+			Headers:     headers,
+			Body:        body,
+		},
+		HttpStat: result,
 	}, err
 }

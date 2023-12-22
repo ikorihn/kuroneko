@@ -23,6 +23,10 @@ var contentTypes = []string{
 	"text/plain",
 }
 
+var responseSwitchButtons = []string{
+	"body", "header", "status", "curl",
+}
+
 type request struct {
 	Method      string
 	Url         string
@@ -63,9 +67,9 @@ func NewUi() *UI {
 
 	ui.responseSwitchModal = tview.NewModal().
 		SetText("Select response field you want to see").
-		AddButtons([]string{"Body", "Header", "Status"}).
+		AddButtons(responseSwitchButtons).
 		SetDoneFunc(func(buttonIndex int, buttonLabel string) {
-			ui.responseViewModel.Show(buttonLabel)
+			ui.responseViewModel.Show(buttonIndex)
 
 			ui.app.SetRoot(ui.rootView, true).SetFocus(ui.responseViewModel.responseField)
 		})
