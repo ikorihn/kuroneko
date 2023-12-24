@@ -32,6 +32,10 @@ func (r Request) ToHttpReq() *http.Request {
 	return req
 }
 
+type Favorite struct {
+	Request []Request `toml:"request"`
+}
+
 type History struct {
 	StatusCode    int
 	Header        http.Header
