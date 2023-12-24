@@ -37,7 +37,12 @@ func (u *UI) setupKeyboard() {
 			return nil
 		case tcell.KeyCtrlH:
 			if _, ok := u.app.GetFocus().(*tview.InputField); !ok {
-				u.app.SetRoot(u.rootView, true).SetFocus(u.historyViewModel.HistoryField)
+				u.app.SetRoot(u.rootView, true).SetFocus(u.historyViewModel.historyField)
+				return nil
+			}
+		case tcell.KeyCtrlF:
+			if _, ok := u.app.GetFocus().(*tview.InputField); !ok {
+				u.app.SetRoot(u.rootView, true).SetFocus(u.favoritesViewModel.favoriteField)
 				return nil
 			}
 		case tcell.KeyCtrlR:
@@ -57,10 +62,23 @@ func (u *UI) setupKeyboard() {
 		return event
 	})
 
+	u.historyViewModel.historyField.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		switch event.Rune() {
+		case 's':
+			curIndex := u.historyViewModel.historyField.GetCurrentItem()
+			err := u.favoritesViewModel.Add(u.historyViewModel.Histories[curIndex].Request)
+			if err != nil {
+				fmt.Printf("cannot save favorite %v\n", err)
+			}
+			return nil
+		}
+
+		return event
+	})
 	u.responseViewModel.responseField.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Rune() {
 		case 'y':
-			clipboard.WriteAll(u.responseViewModel.responseField.GetText(false))
+			clipboard.WriteAll(u.responseViewModel.responseField.GetText(true))
 			return nil
 		}
 

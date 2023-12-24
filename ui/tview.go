@@ -43,6 +43,7 @@ type UI struct {
 	rootGrid *tview.Grid
 
 	historyViewModel    *historyViewModel
+	favoritesViewModel  *favoriteViewModel
 	requestViewModel    *requestViewModel
 	responseViewModel   *responseViewModel
 	responseSwitchModal *tview.Modal
@@ -55,13 +56,8 @@ func NewUi() *UI {
 	ui.controller = controller.NewController()
 	ui.app = tview.NewApplication()
 
-	ui.historyViewModel = &historyViewModel{
-		Parent:       ui,
-		History:      []controller.History{},
-		HistoryField: tview.NewList().ShowSecondaryText(true).SetSecondaryTextColor(tcell.ColorDimGray),
-	}
-	ui.historyViewModel.HistoryField.SetTitle("History (Ctrl+H)").SetBorder(true)
-
+	ui.historyViewModel = NewHistoryViewModel(ui)
+	ui.favoritesViewModel = NewFavoriteViewModel(ui)
 	ui.requestViewModel = NewRequestViewModel(ui)
 	ui.responseViewModel = NewResponseViewModel(ui)
 
@@ -76,11 +72,13 @@ func NewUi() *UI {
 
 	ui.footerText = tview.NewTextView().SetTextAlign(tview.AlignCenter).SetText("footer").SetTextColor(tcell.ColorGray)
 
-	navigation := tview.NewGrid().SetRows(0).
-		AddItem(ui.historyViewModel.HistoryField, 0, 0, 1, 1, 0, 0, true)
+	navigation := tview.NewGrid().
+		SetRows(20, 0).
+		AddItem(ui.historyViewModel.historyField, 0, 0, 1, 20, 0, 0, true).
+		AddItem(ui.favoritesViewModel.favoriteField, 1, 0, 1, 20, 0, 0, true)
 	reqAndRes := tview.NewGrid().
 		SetRows(20, 0).
-		AddItem(ui.requestViewModel.Grid, 0, 0, 1, 20, 10, 0, false).
+		AddItem(ui.requestViewModel.Grid, 0, 0, 1, 20, 0, 0, false).
 		AddItem(ui.responseViewModel.Grid, 1, 0, 1, 20, 0, 0, false)
 	ui.rootGrid = tview.NewGrid().
 		SetRows(0, 2).

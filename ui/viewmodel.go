@@ -2,11 +2,13 @@ package ui
 
 import (
 	"fmt"
+	"log"
 	"slices"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/gdamore/tcell/v2"
 	"github.com/ikorihn/kuroneko/controller"
 	"github.com/rivo/tview"
 	"moul.io/http2curl"
@@ -38,18 +40,18 @@ func NewRequestViewModel(ui *UI) *requestViewModel {
 		SetOptions(httpMethods, nil).
 		SetCurrentOption(0).
 		SetSelectedFunc(func(text string, index int) {
-			request.Method = text
+			ui.requestViewModel.Request.Method = text
 		})
 	inputUrl := tview.NewInputField().SetLabel("URL: ").
 		SetChangedFunc(func(text string) {
-			request.Url = text
+			ui.requestViewModel.Request.Url = text
 		})
 	inputContentType := tview.NewDropDown().
 		SetLabel("Content-Type: ").
 		SetOptions(contentTypes, nil).
 		SetCurrentOption(0).
 		SetSelectedFunc(func(text string, index int) {
-			request.ContentType = text
+			ui.requestViewModel.Request.ContentType = text
 		})
 	bodyText := tview.NewTextView()
 	bodyText.SetTitle("Body").SetBorder(true)
@@ -195,13 +197,23 @@ func (r *responseViewModel) Show(buttonIndex int) {
 
 type historyViewModel struct {
 	Parent       *UI
-	History      []controller.History
-	HistoryField *tview.List
+	Histories    []controller.History
+	historyField *tview.List
+}
+
+func NewHistoryViewModel(ui *UI) *historyViewModel {
+	historyField := tview.NewList().ShowSecondaryText(true).SetSecondaryTextColor(tcell.ColorGray)
+	historyField.SetTitle("History (Ctrl+H)").SetBorder(true)
+	return &historyViewModel{
+		Parent:       ui,
+		Histories:    []controller.History{},
+		historyField: historyField,
+	}
 }
 
 func (h *historyViewModel) Add(history controller.History) {
-	h.History = append(h.History, history)
-	h.HistoryField.AddItem(fmt.Sprintf("%s %s", history.Request.Method, history.Request.Url), history.ExecutionTime.Format(time.RFC3339), 0, func() {
+	h.Histories = append(h.Histories, history)
+	h.historyField.AddItem(fmt.Sprintf("%s %s", history.Request.Method, history.Request.Url), history.ExecutionTime.Format(time.RFC3339), 0, func() {
 		h.Parent.requestViewModel.Update(&request{
 			Method:      history.Request.Method,
 			Url:         history.Request.Url,
@@ -210,4 +222,54 @@ func (h *historyViewModel) Add(history controller.History) {
 		h.Parent.responseViewModel.Update(&history)
 		h.Parent.app.SetFocus(h.Parent.requestViewModel.requestForm)
 	})
+}
+
+type favoriteViewModel struct {
+	Parent        *UI
+	favorite      controller.Favorite
+	favoriteField *tview.List
+}
+
+func NewFavoriteViewModel(ui *UI) *favoriteViewModel {
+	favoriteField := tview.NewList().ShowSecondaryText(false).SetSelectedFocusOnly(true)
+	favoriteField.SetTitle("Favorites (Ctrl+F)").SetBorder(true)
+	favorite, err := ui.controller.LoadFavorite()
+	if err != nil {
+		log.Fatalf("failed to load favorite %v\n", err)
+	}
+
+	for _, req := range favorite.Request {
+		req := req
+		favoriteField.AddItem(fmt.Sprintf("%s %s", req.Method, req.Url), "", 0, func() {
+			ui.requestViewModel.Update(&request{
+				Method:      req.Method,
+				Url:         req.Url,
+				ContentType: req.ContentType,
+			})
+			ui.app.SetFocus(ui.requestViewModel.requestForm)
+		})
+	}
+
+	return &favoriteViewModel{
+		Parent:        ui,
+		favorite:      favorite,
+		favoriteField: favoriteField,
+	}
+}
+
+func (f *favoriteViewModel) Add(req controller.Request) error {
+	err := f.Parent.controller.SaveFavorite(req)
+	if err != nil {
+		return fmt.Errorf("cannot save favorite: %w", err)
+	}
+
+	f.favoriteField.AddItem(fmt.Sprintf("%s %s", req.Method, req.Url), "", 0, func() {
+		f.Parent.requestViewModel.Update(&request{
+			Method:      req.Method,
+			Url:         req.Url,
+			ContentType: req.ContentType,
+		})
+		f.Parent.app.SetFocus(f.Parent.requestViewModel.requestForm)
+	})
+	return nil
 }
