@@ -10,6 +10,8 @@ import (
 
 const favoritesFile = "kuroneko/favorites.toml"
 
+// EditBody edits request body using $EDITOR.
+// If no EDITOR is specified, vim will open.
 func (c *Controller) EditBody() ([]byte, error) {
 	editor := os.Getenv("EDITOR")
 	if editor == "" {
@@ -33,27 +35,29 @@ func (c *Controller) EditBody() ([]byte, error) {
 	return body, err
 }
 
-func (c *Controller) LoadFavorite() (Favorite, error) {
-	c.favorites = Favorite{
+// loadFavorite loads favorite request from file
+func loadFavorite() (Favorite, error) {
+	favorite := Favorite{
 		Request: make([]Request, 0),
 	}
 	f, err := xdg.SearchDataFile(favoritesFile)
 	if err != nil {
-		return c.favorites, nil
+		return favorite, nil
 	}
 
 	b, err := os.ReadFile(f)
 	if err != nil {
-		return c.favorites, err
+		return favorite, err
 	}
 
-	if err := toml.Unmarshal(b, &c.favorites); err != nil {
-		return c.favorites, err
+	if err := toml.Unmarshal(b, &favorite); err != nil {
+		return favorite, err
 	}
 
-	return c.favorites, nil
+	return favorite, nil
 }
 
+// SaveFavorite adds favorite request and save to file
 func (c *Controller) SaveFavorite(request Request) error {
 
 	favoritesFile, err := xdg.DataFile(favoritesFile)
@@ -67,8 +71,8 @@ func (c *Controller) SaveFavorite(request Request) error {
 	}
 	defer f.Close()
 
-	c.favorites.Request = append(c.favorites.Request, request)
-	b, err := toml.Marshal(c.favorites)
+	c.Favorites.Request = append(c.Favorites.Request, request)
+	b, err := toml.Marshal(c.Favorites)
 	if err != nil {
 		return err
 	}

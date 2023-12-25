@@ -20,6 +20,29 @@ type Request struct {
 	Body        []byte
 }
 
+func NewRequest() *Request {
+	return &Request{
+		Headers: make(map[string]string),
+		Body:    make([]byte, 0),
+	}
+}
+
+func NewRequestWithValues(
+	method string,
+	url string,
+	contentType string,
+	headers map[string]string,
+	body []byte,
+) *Request {
+	return &Request{
+		Method:      method,
+		Url:         url,
+		ContentType: contentType,
+		Headers:     headers,
+		Body:        body,
+	}
+}
+
 func (r Request) ToHttpReq() *http.Request {
 	b := io.NopCloser(bytes.NewBuffer(r.Body))
 	req, _ := http.NewRequest(r.Method, r.Url, b)

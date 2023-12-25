@@ -10,7 +10,10 @@ func main() {
 		EastAsianWidth: false,
 	}
 
-	app := ui.NewUi()
+	app, err := ui.NewUi()
+	if err != nil {
+		panic(err)
+	}
 
 	if err := app.Run(); err != nil {
 		panic(err)

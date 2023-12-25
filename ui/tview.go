@@ -50,10 +50,14 @@ type UI struct {
 	footerText          *tview.TextView
 }
 
-func NewUi() *UI {
+func NewUi() (*UI, error) {
 	ui := &UI{}
 
-	ui.controller = controller.NewController()
+	var err error
+	ui.controller, err = controller.NewController()
+	if err != nil {
+		return nil, err
+	}
 	ui.app = tview.NewApplication()
 
 	ui.historyViewModel = NewHistoryViewModel(ui)
@@ -73,13 +77,13 @@ func NewUi() *UI {
 	ui.footerText = tview.NewTextView().SetTextAlign(tview.AlignCenter).SetText("footer").SetTextColor(tcell.ColorGray)
 
 	navigation := tview.NewGrid().
-		SetRows(20, 0).
-		AddItem(ui.historyViewModel.historyField, 0, 0, 1, 20, 0, 0, true).
-		AddItem(ui.favoritesViewModel.favoriteField, 1, 0, 1, 20, 0, 0, true)
+		SetRows(0, 0).
+		AddItem(ui.historyViewModel.historyField, 0, 0, 1, 1, 0, 0, false).
+		AddItem(ui.favoritesViewModel.favoriteField, 1, 0, 1, 1, 0, 0, false)
 	reqAndRes := tview.NewGrid().
-		SetRows(20, 0).
-		AddItem(ui.requestViewModel.Grid, 0, 0, 1, 20, 0, 0, false).
-		AddItem(ui.responseViewModel.Grid, 1, 0, 1, 20, 0, 0, false)
+		SetRows(0, 0).
+		AddItem(ui.requestViewModel.Grid, 0, 0, 1, 1, 0, 0, false).
+		AddItem(ui.responseViewModel.Grid, 1, 0, 1, 1, 0, 0, false)
 	ui.rootGrid = tview.NewGrid().
 		SetRows(0, 2).
 		SetColumns(40, 0).
@@ -91,7 +95,7 @@ func NewUi() *UI {
 	ui.rootView = tview.NewPages().AddPage("main", ui.rootGrid, true, true)
 	ui.setupKeyboard()
 
-	return ui
+	return ui, nil
 }
 
 func (u *UI) Run() error {

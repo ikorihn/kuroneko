@@ -2,7 +2,6 @@ package ui
 
 import (
 	"fmt"
-	"log"
 	"slices"
 	"strconv"
 	"strings"
@@ -16,7 +15,7 @@ import (
 
 type requestViewModel struct {
 	Parent  *UI
-	Request *request
+	Request *controller.Request
 	Grid    *tview.Grid
 
 	requestForm      *tview.Form
@@ -28,11 +27,10 @@ type requestViewModel struct {
 }
 
 func NewRequestViewModel(ui *UI) *requestViewModel {
-	request := &request{
-		Header: make([]string, 0),
-	}
+	request := controller.NewRequest()
+	request.Method = httpMethods[0]
 
-	headerList := tview.NewList().ShowSecondaryText(false)
+	headerList := tview.NewList().ShowSecondaryText(false).SetSelectedFocusOnly(true)
 	headerList.SetTitle("Header (d->delete, Enter->edit)").SetBorder(true)
 
 	inputMethod := tview.NewDropDown().
@@ -71,12 +69,16 @@ func NewRequestViewModel(ui *UI) *requestViewModel {
 				func(form *tview.Form) {
 					name := form.GetFormItemByLabel("Name").(*tview.InputField).GetText()
 					value := form.GetFormItemByLabel("Value").(*tview.InputField).GetText()
+					if name == "" && value == "" {
+						return
+					}
 
 					headerItem := fmt.Sprintf("%s:%s", name, value)
-
 					headerList.AddItem(headerItem, "", 20, nil)
-
-					request.Header = append(request.Header, headerItem)
+					if ui.requestViewModel.Request.Headers == nil {
+						ui.requestViewModel.Request.Headers = make(map[string]string)
+					}
+					ui.requestViewModel.Request.Headers[name] = value
 				},
 			)
 		}).
@@ -101,10 +103,10 @@ func NewRequestViewModel(ui *UI) *requestViewModel {
 		})
 
 	grid := tview.NewGrid().
-		SetRows(10, 20).
-		AddItem(form, 0, 0, 1, 15, 0, 0, false).
-		AddItem(headerList, 1, 0, 9, 15, 10, 0, false).
-		AddItem(bodyText, 0, 15, 10, 5, 0, 0, false)
+		SetRows(10, 10).
+		AddItem(form, 0, 0, 1, 8, 0, 0, false).
+		AddItem(headerList, 1, 0, 1, 8, 0, 0, false).
+		AddItem(bodyText, 0, 8, 2, 2, 0, 0, false)
 	grid.SetBorder(true).SetTitle("Request form (Ctrl+R)")
 
 	return &requestViewModel{
@@ -120,11 +122,15 @@ func NewRequestViewModel(ui *UI) *requestViewModel {
 	}
 }
 
-func (r *requestViewModel) Update(req *request) {
-	r.Request = req
+func (r *requestViewModel) Update(req controller.Request) {
+	r.Request = &req
 	r.inputMethod.SetCurrentOption(slices.Index(httpMethods, req.Method))
 	r.inputUrl.SetText(req.Url)
 	r.inputContentType.SetCurrentOption(slices.Index(contentTypes, req.ContentType))
+	r.bodyText.SetText(string(req.Body))
+	for k, v := range req.Headers {
+		r.headerList.AddItem(fmt.Sprintf("%s:%s", k, v), "", 0, nil)
+	}
 }
 
 type responseViewModel struct {
@@ -144,7 +150,7 @@ func NewResponseViewModel(ui *UI) *responseViewModel {
 	grid := tview.NewGrid().
 		SetRows(20).
 		AddItem(responseText, 0, 0, 1, 15, 0, 0, false).
-		AddItem(statsText, 0, 15, 1, 10, 0, 0, false)
+		AddItem(statsText, 0, 15, 1, 5, 0, 0, false)
 	grid.SetTitle("Response (Ctrl+T)").SetBorder(true)
 
 	return &responseViewModel{
@@ -202,7 +208,7 @@ type historyViewModel struct {
 }
 
 func NewHistoryViewModel(ui *UI) *historyViewModel {
-	historyField := tview.NewList().ShowSecondaryText(true).SetSecondaryTextColor(tcell.ColorGray)
+	historyField := tview.NewList().ShowSecondaryText(true).SetSecondaryTextColor(tcell.ColorGray).SetSelectedFocusOnly(true)
 	historyField.SetTitle("History (Ctrl+H)").SetBorder(true)
 	return &historyViewModel{
 		Parent:       ui,
@@ -214,11 +220,7 @@ func NewHistoryViewModel(ui *UI) *historyViewModel {
 func (h *historyViewModel) Add(history controller.History) {
 	h.Histories = append(h.Histories, history)
 	h.historyField.AddItem(fmt.Sprintf("%s %s", history.Request.Method, history.Request.Url), history.ExecutionTime.Format(time.RFC3339), 0, func() {
-		h.Parent.requestViewModel.Update(&request{
-			Method:      history.Request.Method,
-			Url:         history.Request.Url,
-			ContentType: history.Request.ContentType,
-		})
+		h.Parent.requestViewModel.Update(history.Request)
 		h.Parent.responseViewModel.Update(&history)
 		h.Parent.app.SetFocus(h.Parent.requestViewModel.requestForm)
 	})
@@ -233,19 +235,12 @@ type favoriteViewModel struct {
 func NewFavoriteViewModel(ui *UI) *favoriteViewModel {
 	favoriteField := tview.NewList().ShowSecondaryText(false).SetSelectedFocusOnly(true)
 	favoriteField.SetTitle("Favorites (Ctrl+F)").SetBorder(true)
-	favorite, err := ui.controller.LoadFavorite()
-	if err != nil {
-		log.Fatalf("failed to load favorite %v\n", err)
-	}
+	favorite := ui.controller.Favorites
 
 	for _, req := range favorite.Request {
 		req := req
 		favoriteField.AddItem(fmt.Sprintf("%s %s", req.Method, req.Url), "", 0, func() {
-			ui.requestViewModel.Update(&request{
-				Method:      req.Method,
-				Url:         req.Url,
-				ContentType: req.ContentType,
-			})
+			ui.requestViewModel.Update(req)
 			ui.app.SetFocus(ui.requestViewModel.requestForm)
 		})
 	}
@@ -264,11 +259,7 @@ func (f *favoriteViewModel) Add(req controller.Request) error {
 	}
 
 	f.favoriteField.AddItem(fmt.Sprintf("%s %s", req.Method, req.Url), "", 0, func() {
-		f.Parent.requestViewModel.Update(&request{
-			Method:      req.Method,
-			Url:         req.Url,
-			ContentType: req.ContentType,
-		})
+		f.Parent.requestViewModel.Update(req)
 		f.Parent.app.SetFocus(f.Parent.requestViewModel.requestForm)
 	})
 	return nil

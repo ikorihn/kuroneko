@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/atotto/clipboard"
 	"github.com/gdamore/tcell/v2"
@@ -9,27 +10,6 @@ import (
 )
 
 func (u *UI) setupKeyboard() {
-	//	focusCycle := []tview.Primitive{
-	//		u.history,
-	//		u.inputMethod,
-	//		u.inputUrl,
-	//		u.responseText,
-	//	}
-	//
-	//	u.app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-	//		curFocus := slices.Index(focusCycle, u.app.GetFocus())
-	//		nextFocus := (curFocus + 1) % len(focusCycle)
-	//		prevFocus := (curFocus - 1 + len(focusCycle)) % len(focusCycle)
-	//		switch event.Key() {
-	//		case tcell.KeyTab:
-	//			u.app.SetFocus(focusCycle[nextFocus])
-	//			return nil
-	//		case tcell.KeyBacktab:
-	//			u.app.SetFocus(focusCycle[prevFocus])
-	//			return nil
-	//		}
-	//		return event
-	//	})
 	u.app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
 		case tcell.KeyCtrlT:
@@ -89,22 +69,31 @@ func (u *UI) setupKeyboard() {
 		headerList := u.requestViewModel.headerList
 		switch event.Rune() {
 		case 'd':
+			if headerList.GetItemCount() == 0 {
+				return nil
+			}
 			curIdx := headerList.GetCurrentItem()
+			headerItem, _ := headerList.GetItemText(curIdx)
 			headerList.RemoveItem(curIdx)
-			u.requestViewModel.Request.Header = append(u.requestViewModel.Request.Header[:curIdx], u.requestViewModel.Request.Header[curIdx+1:]...)
+			sp := strings.Split(headerItem, ":")
+			delete(u.requestViewModel.Request.Headers, sp[0])
 			return nil
 		}
 
 		switch event.Key() {
 		case tcell.KeyEnter:
+			if headerList.GetItemCount() == 0 {
+				return nil
+			}
 			curIdx := headerList.GetCurrentItem()
 			curText, _ := headerList.GetItemText(curIdx)
+			sp := strings.Split(curText, ":")
 
 			u.showInputDialog(headerList,
 				func(form *tview.Form) {
-					form.AddInputField("Name", curText, 20, nil, func(text string) {
+					form.AddInputField("Name", sp[0], 20, nil, func(text string) {
 					})
-					form.AddInputField("Value", "", 20, nil, func(text string) {
+					form.AddInputField("Value", sp[1], 20, nil, func(text string) {
 					})
 				},
 				func(form *tview.Form) {
@@ -115,7 +104,10 @@ func (u *UI) setupKeyboard() {
 
 					headerList.RemoveItem(curIdx)
 					headerList.InsertItem(curIdx, headerItem, "", 20, nil)
-					u.requestViewModel.Request.Header[curIdx] = headerItem
+					if u.requestViewModel.Request.Headers == nil {
+						u.requestViewModel.Request.Headers = make(map[string]string)
+					}
+					u.requestViewModel.Request.Headers[name] = value
 				},
 			)
 		case tcell.KeyEsc, tcell.KeyTab:

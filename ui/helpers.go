@@ -3,25 +3,20 @@ package ui
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/gdamore/tcell/v2"
+	"github.com/ikorihn/kuroneko/controller"
 	"github.com/rivo/tview"
 )
 
-func (u *UI) send(r *request) error {
+func (u *UI) send(r *controller.Request) error {
 	u.responseViewModel.Clear()
 
 	url := r.Url
 	method := r.Method
 	contentType := r.ContentType
+	headerMap := r.Headers
 	u.footerText.SetText(fmt.Sprintf("Execute %s %s", method, url))
-
-	headerMap := make(map[string]string, 0)
-	for _, v := range r.Header {
-		sp := strings.Split(v, ":")
-		headerMap[sp[0]] = sp[1]
-	}
 
 	ctx := context.Background()
 	res, err := u.controller.Send(ctx, method, url, contentType, headerMap, r.Body)
@@ -39,8 +34,8 @@ func (u *UI) showErr(err error) {
 	u.footerText.SetText(err.Error()).SetTextColor(tcell.ColorRed)
 }
 
-func (u *UI) showInfo(msg string) {
-	u.footerText.SetText(msg).SetTextColor(tcell.ColorGreen)
+func (u *UI) showInfo(format string, args ...any) {
+	u.footerText.SetText(fmt.Sprintf(format, args...)).SetTextColor(tcell.ColorGreen)
 }
 
 func (u *UI) showInputDialog(backTo tview.Primitive, formTransformer func(*tview.Form), okHandler func(*tview.Form)) {
@@ -48,6 +43,10 @@ func (u *UI) showInputDialog(backTo tview.Primitive, formTransformer func(*tview
 	input.AddButton("OK", func() {
 		okHandler(input)
 
+		u.rootView.RemovePage("input")
+		u.app.SetRoot(u.rootView, true).SetFocus(backTo)
+	})
+	input.AddButton("Cancel", func() {
 		u.rootView.RemovePage("input")
 		u.app.SetRoot(u.rootView, true).SetFocus(backTo)
 	})
