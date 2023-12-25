@@ -58,7 +58,7 @@ func loadFavorite() (Favorite, error) {
 }
 
 // SaveFavorite adds favorite request and save to file
-func (c *Controller) SaveFavorite(request Request) error {
+func (c *Controller) SaveFavorite(request []Request) error {
 
 	favoritesFile, err := xdg.DataFile(favoritesFile)
 	if err != nil {
@@ -71,7 +71,8 @@ func (c *Controller) SaveFavorite(request Request) error {
 	}
 	defer f.Close()
 
-	c.Favorites.Request = append(c.Favorites.Request, request)
+	c.Favorites.Request = request
+
 	b, err := toml.Marshal(c.Favorites)
 	if err != nil {
 		return err
@@ -82,5 +83,4 @@ func (c *Controller) SaveFavorite(request Request) error {
 	}
 
 	return nil
-
 }

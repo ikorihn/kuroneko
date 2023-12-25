@@ -86,7 +86,7 @@ func NewUi() (*UI, error) {
 		AddItem(ui.responseViewModel.Grid, 1, 0, 1, 1, 0, 0, false)
 	ui.rootGrid = tview.NewGrid().
 		SetRows(0, 2).
-		SetColumns(40, 0).
+		SetColumns(35, 0).
 		SetBorders(false).
 		AddItem(navigation, 0, 0, 1, 1, 0, 0, true).
 		AddItem(reqAndRes, 0, 1, 1, 1, 0, 0, false).

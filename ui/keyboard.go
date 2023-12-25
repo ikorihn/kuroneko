@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/atotto/clipboard"
@@ -112,6 +113,24 @@ func (u *UI) setupKeyboard() {
 			)
 		case tcell.KeyEsc, tcell.KeyTab:
 			u.app.SetFocus(u.requestViewModel.requestForm)
+		}
+
+		return event
+	})
+
+	u.favoritesViewModel.favoriteField.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		list := u.favoritesViewModel.favoriteField
+		switch event.Rune() {
+		case 'd':
+			if list.GetItemCount() == 0 {
+				return nil
+			}
+			curIdx := list.GetCurrentItem()
+			list.RemoveItem(curIdx)
+			u.favoritesViewModel.favorite.Request = slices.Delete(u.favoritesViewModel.favorite.Request, curIdx, curIdx+1)
+
+			u.controller.SaveFavorite(u.favoritesViewModel.favorite.Request)
+			return nil
 		}
 
 		return event

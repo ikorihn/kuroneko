@@ -23,7 +23,6 @@ type Request struct {
 func NewRequest() *Request {
 	return &Request{
 		Headers: make(map[string]string),
-		Body:    make([]byte, 0),
 	}
 }
 
