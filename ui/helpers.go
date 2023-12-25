@@ -3,6 +3,7 @@ package ui
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/ikorihn/kuroneko/controller"
@@ -65,4 +66,38 @@ func (u *UI) showInputDialog(backTo tview.Primitive, formTransformer func(*tview
 		true,
 	)
 
+}
+
+func (u *UI) showInputHeaderDialog(headerList *tview.List, itemIndex int) {
+	var curName, curValue string
+	if itemIndex >= 0 && itemIndex < headerList.GetItemCount() {
+		curText, _ := headerList.GetItemText(itemIndex)
+		sp := strings.Split(curText, ":")
+		curName, curValue = sp[0], sp[1]
+	}
+	u.showInputDialog(headerList,
+		func(form *tview.Form) {
+			form.AddInputField("Name", curName, 20, nil, func(text string) {
+			})
+			form.AddInputField("Value", curValue, 20, nil, func(text string) {
+			})
+		},
+		func(form *tview.Form) {
+			newName := form.GetFormItemByLabel("Name").(*tview.InputField).GetText()
+			newValue := form.GetFormItemByLabel("Value").(*tview.InputField).GetText()
+			newItem := fmt.Sprintf("%s:%s", newName, newValue)
+			if newItem == ":" {
+				return
+			}
+
+			if itemIndex >= 0 {
+				headerList.RemoveItem(itemIndex)
+				headerList.InsertItem(itemIndex, newItem, "", 0, nil)
+				u.requestViewModel.Request.Headers.RemoveNameValue(fmt.Sprintf("%s:%s", curName, curValue))
+			} else {
+				headerList.AddItem(newItem, "", 0, nil)
+			}
+			u.requestViewModel.Request.Headers.AddNameValue(newItem)
+		},
+	)
 }

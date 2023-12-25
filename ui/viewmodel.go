@@ -59,28 +59,7 @@ func NewRequestViewModel(ui *UI) *requestViewModel {
 		AddFormItem(inputUrl).
 		AddFormItem(inputContentType).
 		AddButton("Add header", func() {
-			ui.showInputDialog(ui.requestViewModel.requestForm,
-				func(form *tview.Form) {
-					form.AddInputField("Name", "", 20, nil, func(text string) {
-					})
-					form.AddInputField("Value", "", 20, nil, func(text string) {
-					})
-				},
-				func(form *tview.Form) {
-					name := form.GetFormItemByLabel("Name").(*tview.InputField).GetText()
-					value := form.GetFormItemByLabel("Value").(*tview.InputField).GetText()
-					if name == "" && value == "" {
-						return
-					}
-
-					headerItem := fmt.Sprintf("%s:%s", name, value)
-					headerList.AddItem(headerItem, "", 20, nil)
-					if ui.requestViewModel.Request.Headers == nil {
-						ui.requestViewModel.Request.Headers = make(map[string]string)
-					}
-					ui.requestViewModel.Request.Headers[name] = value
-				},
-			)
+			ui.showInputHeaderDialog(headerList, -1)
 		}).
 		AddButton("Edit header", func() {
 			ui.app.SetFocus(headerList)
@@ -129,6 +108,8 @@ func (r *requestViewModel) Update(req controller.Request) {
 	r.inputUrl.SetText(req.Url)
 	r.inputContentType.SetCurrentOption(slices.Index(contentTypes, req.ContentType))
 	r.bodyText.SetText(string(req.Body))
+
+	r.headerList.Clear()
 	for k, v := range req.Headers {
 		r.headerList.AddItem(fmt.Sprintf("%s:%s", k, v), "", 0, nil)
 	}
@@ -219,7 +200,7 @@ func NewHistoryViewModel(ui *UI) *historyViewModel {
 }
 
 func (h *historyViewModel) Add(history controller.History) {
-	h.Histories = append(h.Histories, history)
+	h.Histories = slices.Insert(h.Histories, 0, history)
 	h.historyField.InsertItem(0, fmt.Sprintf("%s %s", history.Request.Method, history.Request.Url), history.ExecutionTime.Format(time.RFC3339), 0, func() {
 		h.Parent.requestViewModel.Update(history.Request)
 		h.Parent.responseViewModel.Update(&history)
@@ -229,7 +210,6 @@ func (h *historyViewModel) Add(history controller.History) {
 
 type favoriteViewModel struct {
 	Parent        *UI
-	favorite      controller.Favorite
 	favoriteField *tview.List
 }
 
@@ -248,14 +228,13 @@ func NewFavoriteViewModel(ui *UI) *favoriteViewModel {
 
 	return &favoriteViewModel{
 		Parent:        ui,
-		favorite:      favorite,
 		favoriteField: favoriteField,
 	}
 }
 
 func (f *favoriteViewModel) Add(req controller.Request) error {
-	f.Parent.controller.Favorites.Request = append(f.Parent.controller.Favorites.Request, req)
-	err := f.Parent.controller.SaveFavorite(f.Parent.controller.Favorites.Request)
+	favReqs := append(f.Parent.controller.Favorites.Request, req)
+	err := f.Parent.controller.SaveFavorite(favReqs)
 	if err != nil {
 		return fmt.Errorf("cannot save favorite: %w", err)
 	}

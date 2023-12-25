@@ -3,7 +3,6 @@ package ui
 import (
 	"fmt"
 	"slices"
-	"strings"
 
 	"github.com/atotto/clipboard"
 	"github.com/gdamore/tcell/v2"
@@ -76,8 +75,7 @@ func (u *UI) setupKeyboard() {
 			curIdx := headerList.GetCurrentItem()
 			headerItem, _ := headerList.GetItemText(curIdx)
 			headerList.RemoveItem(curIdx)
-			sp := strings.Split(headerItem, ":")
-			delete(u.requestViewModel.Request.Headers, sp[0])
+			u.requestViewModel.Request.Headers.RemoveNameValue(headerItem)
 			return nil
 		}
 
@@ -87,30 +85,8 @@ func (u *UI) setupKeyboard() {
 				return nil
 			}
 			curIdx := headerList.GetCurrentItem()
-			curText, _ := headerList.GetItemText(curIdx)
-			sp := strings.Split(curText, ":")
+			u.showInputHeaderDialog(headerList, curIdx)
 
-			u.showInputDialog(headerList,
-				func(form *tview.Form) {
-					form.AddInputField("Name", sp[0], 20, nil, func(text string) {
-					})
-					form.AddInputField("Value", sp[1], 20, nil, func(text string) {
-					})
-				},
-				func(form *tview.Form) {
-					name := form.GetFormItemByLabel("Name").(*tview.InputField).GetText()
-					value := form.GetFormItemByLabel("Value").(*tview.InputField).GetText()
-
-					headerItem := fmt.Sprintf("%s:%s", name, value)
-
-					headerList.RemoveItem(curIdx)
-					headerList.InsertItem(curIdx, headerItem, "", 20, nil)
-					if u.requestViewModel.Request.Headers == nil {
-						u.requestViewModel.Request.Headers = make(map[string]string)
-					}
-					u.requestViewModel.Request.Headers[name] = value
-				},
-			)
 		case tcell.KeyEsc, tcell.KeyTab:
 			u.app.SetFocus(u.requestViewModel.requestForm)
 		}
@@ -127,9 +103,7 @@ func (u *UI) setupKeyboard() {
 			}
 			curIdx := list.GetCurrentItem()
 			list.RemoveItem(curIdx)
-			u.favoritesViewModel.favorite.Request = slices.Delete(u.favoritesViewModel.favorite.Request, curIdx, curIdx+1)
-
-			u.controller.SaveFavorite(u.favoritesViewModel.favorite.Request)
+			u.controller.SaveFavorite(slices.Delete(u.controller.Favorites.Request, curIdx, curIdx+1))
 			return nil
 		}
 

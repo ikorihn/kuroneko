@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"io"
+	"maps"
 	"net/http"
 	"time"
 
@@ -16,7 +17,7 @@ type Request struct {
 	Method      string
 	Url         string
 	ContentType string
-	Headers     map[string]string
+	Headers     headerMap
 	Body        []byte
 }
 
@@ -69,7 +70,7 @@ type History struct {
 	HttpStat httpstat.Result
 }
 
-func (c *Controller) Send(ctx context.Context, method, requestUrl, contentType string, headers map[string]string, body []byte) (*History, error) {
+func (c *Controller) Send(ctx context.Context, method, requestUrl, contentType string, headers headerMap, body []byte) (*History, error) {
 	var bbuf io.Reader
 	if body != nil {
 		bbuf = bytes.NewBuffer(body)
@@ -112,7 +113,7 @@ func (c *Controller) Send(ctx context.Context, method, requestUrl, contentType s
 			Method:      method,
 			Url:         requestUrl,
 			ContentType: contentType,
-			Headers:     headers,
+			Headers:     maps.Clone(headers),
 			Body:        body,
 		},
 		HttpStat: result,
