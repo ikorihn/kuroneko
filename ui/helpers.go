@@ -17,7 +17,7 @@ func (u *UI) send(r *controller.Request) error {
 	method := r.Method
 	contentType := r.ContentType
 	headerMap := r.Headers
-	u.footerText.SetText(fmt.Sprintf("Execute %s %s", method, url))
+	u.showInfo(fmt.Sprintf("Execute %s %s", method, url))
 
 	ctx := context.Background()
 	res, err := u.controller.Send(ctx, method, url, contentType, headerMap, r.Body)

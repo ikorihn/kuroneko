@@ -8,24 +8,24 @@ import (
 	"github.com/rivo/tview"
 )
 
-var httpMethods = []string{
-	http.MethodGet,
-	http.MethodPost,
-	http.MethodPut,
-	http.MethodPatch,
-	http.MethodDelete,
-}
-
-var contentTypes = []string{
-	"",
-	"application/json",
-	"application/xml",
-	"text/plain",
-}
-
-var responseSwitchButtons = []string{
-	"body", "header", "status", "curl",
-}
+var (
+	httpMethods = []string{
+		http.MethodGet,
+		http.MethodPost,
+		http.MethodPut,
+		http.MethodPatch,
+		http.MethodDelete,
+	}
+	contentTypes = []string{
+		"",
+		"application/json",
+		"application/xml",
+		"text/plain",
+	}
+	responseSwitchButtons = []string{
+		"body", "header", "cURL",
+	}
+)
 
 type request struct {
 	Method      string
@@ -74,7 +74,8 @@ func NewUi() (*UI, error) {
 			ui.app.SetRoot(ui.rootView, true).SetFocus(ui.responseViewModel.responseField)
 		})
 
-	ui.footerText = tview.NewTextView().SetTextAlign(tview.AlignCenter).SetText("footer").SetTextColor(tcell.ColorGray)
+	ui.footerText = tview.NewTextView().SetTextAlign(tview.AlignCenter).SetTextColor(tcell.ColorGray)
+	ui.showInfo("kuroneko / q->Quit")
 
 	navigation := tview.NewGrid().
 		SetRows(0, 0).
