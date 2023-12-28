@@ -31,7 +31,7 @@ func NewRequestViewModel(ui *UI) *requestViewModel {
 	request.Method = httpMethods[0]
 
 	headerList := tview.NewList().ShowSecondaryText(false).SetSelectedFocusOnly(true)
-	headerList.SetTitle("Header (d->delete, Enter->edit)").SetBorder(true)
+	headerList.SetTitle("Header (a->add, d->delete, e->edit)").SetBorder(true)
 
 	inputMethod := tview.NewDropDown().
 		SetLabel("Method: ").
@@ -58,10 +58,7 @@ func NewRequestViewModel(ui *UI) *requestViewModel {
 		AddFormItem(inputMethod).
 		AddFormItem(inputUrl).
 		AddFormItem(inputContentType).
-		AddButton("Add header", func() {
-			ui.showInputHeaderDialog(headerList, -1)
-		}).
-		AddButton("Edit header", func() {
+		AddButton("Header", func() {
 			ui.app.SetFocus(headerList)
 		}).
 		AddButton("Body", func() {

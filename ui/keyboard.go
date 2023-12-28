@@ -77,16 +77,18 @@ func (u *UI) setupKeyboard() {
 			headerList.RemoveItem(curIdx)
 			u.requestViewModel.Request.Headers.RemoveNameValue(headerItem)
 			return nil
-		}
-
-		switch event.Key() {
-		case tcell.KeyEnter:
+		case 'e':
 			if headerList.GetItemCount() == 0 {
 				return nil
 			}
 			curIdx := headerList.GetCurrentItem()
 			u.showInputHeaderDialog(headerList, curIdx)
 
+		case 'a':
+			u.showInputHeaderDialog(headerList, -1)
+		}
+
+		switch event.Key() {
 		case tcell.KeyEsc, tcell.KeyTab:
 			u.app.SetFocus(u.requestViewModel.requestForm)
 		}
