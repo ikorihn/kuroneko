@@ -66,7 +66,7 @@ func NewRequestViewModel(ui *UI) *requestViewModel {
 		}).
 		AddButton("Body", func() {
 			ui.app.Suspend(func() {
-				body, err := ui.controller.EditBody()
+				body, err := ui.controller.EditBody(ui.requestViewModel.Request.Body)
 				if err != nil {
 					ui.showErr(err)
 					return

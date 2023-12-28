@@ -12,7 +12,7 @@ const favoritesFile = "kuroneko/favorites.toml"
 
 // EditBody edits request body using $EDITOR.
 // If no EDITOR is specified, vim will open.
-func (c *Controller) EditBody() ([]byte, error) {
+func (c *Controller) EditBody(curBody []byte) ([]byte, error) {
 	editor := os.Getenv("EDITOR")
 	if editor == "" {
 		editor = "vim"
@@ -21,6 +21,11 @@ func (c *Controller) EditBody() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	if len(curBody) > 0 {
+		tempFile.Write(curBody)
+	}
+
 	tempFile.Close()
 
 	defer os.Remove(tempFile.Name())
