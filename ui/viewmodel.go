@@ -130,7 +130,7 @@ func NewResponseViewModel(ui *UI) *responseViewModel {
 		SetColumns(0, 30).
 		AddItem(responseText, 0, 0, 1, 1, 0, 0, false).
 		AddItem(statsText, 0, 1, 1, 1, 0, 0, false)
-	grid.SetTitle("Response[Ctrl+T] (y->Copy to clipboard)").SetBorder(true)
+	grid.SetTitle("Response[Ctrl+T] (y->Copy, f->Format)").SetBorder(true)
 
 	return &responseViewModel{
 		Grid:          grid,

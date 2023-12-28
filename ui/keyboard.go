@@ -6,6 +6,7 @@ import (
 
 	"github.com/atotto/clipboard"
 	"github.com/gdamore/tcell/v2"
+	"github.com/ikorihn/kuroneko/controller"
 	"github.com/rivo/tview"
 )
 
@@ -59,6 +60,11 @@ func (u *UI) setupKeyboard() {
 		switch event.Rune() {
 		case 'y':
 			clipboard.WriteAll(u.responseViewModel.responseField.GetText(true))
+			return nil
+		case 'f':
+			resp := u.responseViewModel.Response
+			formatted := controller.FormatBody(*resp)
+			u.responseViewModel.responseField.SetText(formatted)
 			return nil
 		}
 
