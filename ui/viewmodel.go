@@ -145,7 +145,11 @@ func NewResponseViewModel(ui *UI) *responseViewModel {
 func (r *responseViewModel) Update(response *controller.History) {
 	r.Response = response
 	r.responseField.SetText(string(response.Body))
-	r.statsText.SetText(fmt.Sprintf("%+v", response.HttpStat))
+
+	stats := fmt.Sprintf("Status: %d\n", response.StatusCode)
+	stats += fmt.Sprintf("---------\n")
+	stats += fmt.Sprintf("%+v", response.HttpStat)
+	r.statsText.SetText(stats)
 }
 
 func (r *responseViewModel) Clear() {
