@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gdamore/tcell/v2"
-	"github.com/ikorihn/kuroneko/controller"
+	"github.com/ikorihn/kuroneko/core"
 	"github.com/rivo/tview"
 )
 
@@ -36,7 +36,7 @@ type request struct {
 }
 
 type UI struct {
-	controller *controller.Controller
+	controller *core.Controller
 
 	app      *tview.Application
 	rootView *tview.Pages
@@ -54,7 +54,7 @@ func NewUi() (*UI, error) {
 	ui := &UI{}
 
 	var err error
-	ui.controller, err = controller.NewController()
+	ui.controller, err = core.NewController()
 	if err != nil {
 		return nil, err
 	}

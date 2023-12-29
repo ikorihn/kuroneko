@@ -1,46 +1,17 @@
-package controller
+package core
 
 import (
-	"bytes"
 	"os"
-	"os/exec"
 
 	"github.com/adrg/xdg"
 	"github.com/pelletier/go-toml/v2"
 )
 
-const favoritesFile = "kuroneko/favorites.toml"
-
-// EditBody edits request body using $EDITOR.
-// If no EDITOR is specified, vim will open.
-func (c *Controller) EditBody(curBody []byte) ([]byte, error) {
-	editor := os.Getenv("EDITOR")
-	if editor == "" {
-		editor = "vim"
-	}
-	tempFile, err := os.CreateTemp("", "kuroneko-*")
-	if err != nil {
-		return nil, err
-	}
-
-	if len(curBody) > 0 {
-		tempFile.Write(curBody)
-	}
-
-	tempFile.Close()
-
-	defer os.Remove(tempFile.Name())
-
-	cmd := exec.Command(editor, tempFile.Name())
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
-	err = cmd.Run()
-
-	body, err := os.ReadFile(tempFile.Name())
-	body = bytes.Trim(body, "\n")
-
-	return body, err
+type Favorite struct {
+	Request []Request `toml:"request"`
 }
+
+const favoritesFile = "kuroneko/favorites.toml"
 
 // loadFavorite loads favorite request from file
 func loadFavorite() (Favorite, error) {

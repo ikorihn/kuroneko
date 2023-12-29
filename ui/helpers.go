@@ -6,11 +6,11 @@ import (
 	"strings"
 
 	"github.com/gdamore/tcell/v2"
-	"github.com/ikorihn/kuroneko/controller"
+	"github.com/ikorihn/kuroneko/core"
 	"github.com/rivo/tview"
 )
 
-func (u *UI) send(r *controller.Request) error {
+func (u *UI) send(r *core.Request) error {
 	u.responseViewModel.Clear()
 
 	url := r.Url

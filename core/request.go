@@ -1,4 +1,4 @@
-package controller
+package core
 
 import (
 	"bytes"
@@ -6,12 +6,18 @@ import (
 	"io"
 	"maps"
 	"net/http"
+	"regexp"
 	"time"
 
 	"github.com/tcnksm/go-httpstat"
 )
 
 const hdrContentType = "Content-Type"
+
+var (
+	reContentTypeJson = regexp.MustCompile(`(?i:(application|text)/(.*json.*)(;|$))`)
+	reContentTypeXml  = regexp.MustCompile(`(?i:(application|text)/(.*xml.*)(;|$))`)
+)
 
 type Request struct {
 	Method      string
@@ -58,10 +64,6 @@ func (r Request) ToHttpReq() *http.Request {
 		req.Header.Add(k, v)
 	}
 	return req
-}
-
-type Favorite struct {
-	Request []Request `toml:"request"`
 }
 
 type History struct {

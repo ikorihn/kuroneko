@@ -6,7 +6,7 @@ import (
 
 	"github.com/atotto/clipboard"
 	"github.com/gdamore/tcell/v2"
-	"github.com/ikorihn/kuroneko/controller"
+	"github.com/ikorihn/kuroneko/core"
 	"github.com/rivo/tview"
 )
 
@@ -63,7 +63,7 @@ func (u *UI) setupKeyboard() {
 			return nil
 		case 'f':
 			resp := u.responseViewModel.Response
-			formatted := controller.FormatBody(*resp)
+			formatted := core.FormatResponseBody(*resp)
 			u.responseViewModel.responseField.SetText(formatted)
 			return nil
 		}

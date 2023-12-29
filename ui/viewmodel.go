@@ -7,14 +7,14 @@ import (
 	"time"
 
 	"github.com/gdamore/tcell/v2"
-	"github.com/ikorihn/kuroneko/controller"
+	"github.com/ikorihn/kuroneko/core"
 	"github.com/rivo/tview"
 	"moul.io/http2curl"
 )
 
 type requestViewModel struct {
 	Parent  *UI
-	Request *controller.Request
+	Request *core.Request
 	Grid    *tview.Grid
 
 	requestForm      *tview.Form
@@ -26,7 +26,7 @@ type requestViewModel struct {
 }
 
 func NewRequestViewModel(ui *UI) *requestViewModel {
-	request := controller.NewRequest()
+	request := core.NewRequest()
 	request.Method = httpMethods[0]
 
 	headerList := tview.NewList().ShowSecondaryText(false).SetSelectedFocusOnly(true)
@@ -62,7 +62,7 @@ func NewRequestViewModel(ui *UI) *requestViewModel {
 		}).
 		AddButton("Body", func() {
 			ui.app.Suspend(func() {
-				body, err := ui.controller.EditBody(ui.requestViewModel.Request.Body)
+				body, err := core.EditRequestBody(ui.requestViewModel.Request.Body)
 				if err != nil {
 					ui.showErr(err)
 					return
@@ -98,7 +98,7 @@ func NewRequestViewModel(ui *UI) *requestViewModel {
 	}
 }
 
-func (r *requestViewModel) Update(req controller.Request) {
+func (r *requestViewModel) Update(req core.Request) {
 	r.Request = &req
 	r.inputMethod.SetCurrentOption(slices.Index(httpMethods, req.Method))
 	r.inputUrl.SetText(req.Url)
@@ -112,7 +112,7 @@ func (r *requestViewModel) Update(req controller.Request) {
 }
 
 type responseViewModel struct {
-	Response *controller.History
+	Response *core.History
 	Grid     *tview.Grid
 
 	responseField *tview.TextView
@@ -138,7 +138,7 @@ func NewResponseViewModel(ui *UI) *responseViewModel {
 	}
 }
 
-func (r *responseViewModel) Update(response *controller.History) {
+func (r *responseViewModel) Update(response *core.History) {
 	r.Response = response
 	r.responseField.SetText(string(response.Body))
 
@@ -183,7 +183,7 @@ func (r *responseViewModel) Show(buttonIndex int) {
 
 type historyViewModel struct {
 	Parent       *UI
-	Histories    []controller.History
+	Histories    []core.History
 	historyField *tview.List
 }
 
@@ -192,12 +192,12 @@ func NewHistoryViewModel(ui *UI) *historyViewModel {
 	historyField.SetTitle("History[1] (s->Add favorite)").SetBorder(true)
 	return &historyViewModel{
 		Parent:       ui,
-		Histories:    []controller.History{},
+		Histories:    []core.History{},
 		historyField: historyField,
 	}
 }
 
-func (h *historyViewModel) Add(history controller.History) {
+func (h *historyViewModel) Add(history core.History) {
 	h.Histories = slices.Insert(h.Histories, 0, history)
 	h.historyField.InsertItem(0, fmt.Sprintf("%s %s", history.Request.Method, history.Request.Url), history.ExecutionTime.Format(time.RFC3339), 0, func() {
 		h.Parent.requestViewModel.Update(history.Request)
@@ -230,7 +230,7 @@ func NewFavoriteViewModel(ui *UI) *favoriteViewModel {
 	}
 }
 
-func (f *favoriteViewModel) Add(req controller.Request) error {
+func (f *favoriteViewModel) Add(req core.Request) error {
 	favReqs := append(f.Parent.controller.Favorites.Request, req)
 	err := f.Parent.controller.SaveFavorite(favReqs)
 	if err != nil {
