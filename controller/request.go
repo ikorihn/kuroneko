@@ -44,8 +44,13 @@ func NewRequestWithValues(
 }
 
 func (r Request) ToHttpReq() *http.Request {
-	b := io.NopCloser(bytes.NewBuffer(r.Body))
-	req, _ := http.NewRequest(r.Method, r.Url, b)
+	var req *http.Request
+	if len(r.Body) > 0 {
+		b := io.NopCloser(bytes.NewBuffer(r.Body))
+		req, _ = http.NewRequest(r.Method, r.Url, b)
+	} else {
+		req, _ = http.NewRequest(r.Method, r.Url, nil)
+	}
 	if r.ContentType != "" {
 		req.Header.Add(hdrContentType, r.ContentType)
 	}

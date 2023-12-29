@@ -3,7 +3,6 @@ package ui
 import (
 	"fmt"
 	"slices"
-	"strconv"
 	"strings"
 	"time"
 
@@ -157,6 +156,7 @@ func (r *responseViewModel) Clear() {
 
 func (r *responseViewModel) Show(buttonIndex int) {
 	if r.Response == nil {
+		return
 	}
 	i := 0
 	if i == buttonIndex {
@@ -170,11 +170,6 @@ func (r *responseViewModel) Show(buttonIndex int) {
 			txt = append(txt, fmt.Sprintf("%s: %s", k, r.Response.Header.Get(k)))
 		}
 		r.responseField.SetText(strings.Join(txt, "\n"))
-		return
-	}
-	i++
-	if i == buttonIndex {
-		r.responseField.SetText(strconv.Itoa(r.Response.StatusCode))
 		return
 	}
 	i++

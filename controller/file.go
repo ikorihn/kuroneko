@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"bytes"
 	"os"
 	"os/exec"
 
@@ -36,6 +37,7 @@ func (c *Controller) EditBody(curBody []byte) ([]byte, error) {
 	err = cmd.Run()
 
 	body, err := os.ReadFile(tempFile.Name())
+	body = bytes.Trim(body, "\n")
 
 	return body, err
 }
