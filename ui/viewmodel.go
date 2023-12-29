@@ -84,7 +84,7 @@ func NewRequestViewModel(ui *UI) *requestViewModel {
 		AddItem(form, 0, 0, 1, 8, 0, 0, false).
 		AddItem(headerList, 1, 0, 1, 8, 0, 0, false).
 		AddItem(bodyText, 0, 8, 2, 2, 0, 0, false)
-	grid.SetBorder(true).SetTitle("Request[Ctrl+R]")
+	grid.SetBorder(true).SetTitle("Request[2]")
 
 	return &requestViewModel{
 		Parent:           ui,
@@ -130,7 +130,7 @@ func NewResponseViewModel(ui *UI) *responseViewModel {
 		SetColumns(0, 30).
 		AddItem(responseText, 0, 0, 1, 1, 0, 0, false).
 		AddItem(statsText, 0, 1, 1, 1, 0, 0, false)
-	grid.SetTitle("Response[Ctrl+T] (y->Copy, f->Format)").SetBorder(true)
+	grid.SetTitle("Response[4] (y->Copy, f->Format)").SetBorder(true)
 
 	return &responseViewModel{
 		Grid:          grid,
@@ -156,6 +156,8 @@ func (r *responseViewModel) Clear() {
 }
 
 func (r *responseViewModel) Show(buttonIndex int) {
+	if r.Response == nil {
+	}
 	i := 0
 	if i == buttonIndex {
 		r.responseField.SetText(string(r.Response.Body))
@@ -192,7 +194,7 @@ type historyViewModel struct {
 
 func NewHistoryViewModel(ui *UI) *historyViewModel {
 	historyField := tview.NewList().ShowSecondaryText(true).SetSecondaryTextColor(tcell.ColorGray).SetSelectedFocusOnly(true)
-	historyField.SetTitle("History[Ctrl+H] (s->Add favorite)").SetBorder(true)
+	historyField.SetTitle("History[1] (s->Add favorite)").SetBorder(true)
 	return &historyViewModel{
 		Parent:       ui,
 		Histories:    []controller.History{},
@@ -216,7 +218,7 @@ type favoriteViewModel struct {
 
 func NewFavoriteViewModel(ui *UI) *favoriteViewModel {
 	favoriteField := tview.NewList().ShowSecondaryText(false).SetSelectedFocusOnly(true)
-	favoriteField.SetTitle("Favorites[Ctrl+F]").SetBorder(true)
+	favoriteField.SetTitle("Favorites[3]").SetBorder(true)
 	favorite := ui.controller.Favorites
 
 	for _, req := range favorite.Request {
