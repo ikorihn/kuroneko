@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"time"
 
+	parsecurl "github.com/killlowkey/parse-curl"
 	"github.com/tcnksm/go-httpstat"
 )
 
@@ -46,6 +47,19 @@ func NewRequestWithValues(
 		ContentType: contentType,
 		Headers:     headers,
 		Body:        body,
+	}
+}
+
+func NewRequestFromCurl(curl *parsecurl.Request) Request {
+	contentType := curl.Header[hdrContentType]
+	delete(curl.Header, hdrContentType)
+
+	return Request{
+		Method:      curl.Method,
+		Url:         curl.Url,
+		ContentType: contentType,
+		Headers:     headerMap(curl.Header),
+		Body:        []byte(curl.Body),
 	}
 }
 

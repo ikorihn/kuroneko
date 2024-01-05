@@ -35,6 +35,10 @@ func (u *UI) setupKeyboard() {
 		case '4':
 			u.app.SetRoot(u.responseSwitchModal, true).SetFocus(u.responseSwitchModal)
 			return nil
+		case 'C':
+			if _, ok := u.app.GetFocus().(*tview.InputField); !ok {
+				u.showParseCurlDialog()
+			}
 		case 'q':
 			if _, ok := u.app.GetFocus().(*tview.InputField); !ok {
 				u.app.Stop()

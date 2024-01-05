@@ -23,7 +23,7 @@ var (
 		"text/plain",
 	}
 	responseSwitchButtons = []string{
-		"body", "header", "cURL",
+		"body", "header", "curl",
 	}
 )
 
@@ -75,7 +75,7 @@ func NewUi() (*UI, error) {
 		})
 
 	ui.footerText = tview.NewTextView().SetTextAlign(tview.AlignCenter).SetTextColor(tcell.ColorGray)
-	ui.showInfo("kuroneko / q->Quit")
+	ui.showInfo("kuroneko / q->Quit / C->From curl")
 
 	navigation := tview.NewGrid().
 		SetRows(0, 0).

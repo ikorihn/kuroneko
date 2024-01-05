@@ -7,6 +7,7 @@ import (
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/ikorihn/kuroneko/core"
+	parsecurl "github.com/killlowkey/parse-curl"
 	"github.com/rivo/tview"
 )
 
@@ -98,6 +99,29 @@ func (u *UI) showInputHeaderDialog(headerList *tview.List, itemIndex int) {
 				headerList.AddItem(newItem, "", 0, nil)
 			}
 			u.requestViewModel.Request.Headers.AddNameValue(newItem)
+		},
+	)
+}
+
+func (u *UI) showParseCurlDialog() {
+	u.showInputDialog(u.requestViewModel.requestForm,
+		func(form *tview.Form) {
+			form.AddInputField("curl command", "", 20, nil, func(text string) {
+			})
+		},
+		func(form *tview.Form) {
+			curlStr := form.GetFormItemByLabel("curl command").(*tview.InputField).GetText()
+			if curlStr == "" {
+				return
+			}
+
+			curl, ok := parsecurl.Parse(curlStr)
+			if !ok {
+				return
+			}
+
+			req := core.NewRequestFromCurl(curl)
+			u.requestViewModel.Update(req)
 		},
 	)
 }
