@@ -99,7 +99,13 @@ func NewRequestViewModel(ui *UI) *requestViewModel {
 }
 
 func (r *requestViewModel) Update(req core.Request) {
-	r.Request = &req
+	r.Request = core.NewRequestWithValues(
+		req.Method,
+		req.Url,
+		req.ContentType,
+		req.Headers,
+		req.Body,
+	)
 	r.inputMethod.SetCurrentOption(slices.Index(httpMethods, req.Method))
 	r.inputUrl.SetText(req.Url)
 	r.inputContentType.SetCurrentOption(slices.Index(contentTypes, req.ContentType))
