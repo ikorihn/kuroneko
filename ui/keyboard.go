@@ -11,6 +11,14 @@ import (
 )
 
 func (u *UI) setupKeyboard() {
+	excludeInput := func(fn func()) bool {
+		if _, ok := u.app.GetFocus().(*tview.InputField); !ok {
+			fn()
+			return true
+		}
+		return false
+	}
+
 	u.app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
 		case tcell.KeyCtrlS:
@@ -20,28 +28,40 @@ func (u *UI) setupKeyboard() {
 
 		switch event.Rune() {
 		case '1':
-			if _, ok := u.app.GetFocus().(*tview.InputField); !ok {
+			if excludeInput(func() {
 				u.app.SetRoot(u.rootView, true).SetFocus(u.historyViewModel.historyField)
+			}) {
 				return nil
 			}
 		case '2':
-			u.app.SetRoot(u.rootView, true).SetFocus(u.requestViewModel.requestForm)
-			return nil
+			if excludeInput(func() {
+				u.app.SetRoot(u.rootView, true).SetFocus(u.requestViewModel.requestForm)
+			}) {
+				return nil
+			}
 		case '3':
-			if _, ok := u.app.GetFocus().(*tview.InputField); !ok {
+			if excludeInput(func() {
 				u.app.SetRoot(u.rootView, true).SetFocus(u.favoritesViewModel.favoriteField)
+			}) {
 				return nil
 			}
 		case '4':
-			u.app.SetRoot(u.responseSwitchModal, true).SetFocus(u.responseSwitchModal)
-			return nil
+			if excludeInput(func() {
+				u.app.SetRoot(u.responseSwitchModal, true).SetFocus(u.responseSwitchModal)
+			}) {
+				return nil
+			}
 		case 'C':
-			if _, ok := u.app.GetFocus().(*tview.InputField); !ok {
+			if excludeInput(func() {
 				u.showParseCurlDialog()
+			}) {
+				return nil
 			}
 		case 'q':
-			if _, ok := u.app.GetFocus().(*tview.InputField); !ok {
+			if excludeInput(func() {
 				u.app.Stop()
+			}) {
+				return nil
 			}
 		}
 		return event
