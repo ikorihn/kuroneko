@@ -24,16 +24,10 @@ func (h headerMap) ToList() []string {
 	return result
 }
 func (h headerMap) AddNameValue(nameValue string) {
-	if h == nil {
-		h = make(headerMap)
-	}
 	sp := strings.Split(nameValue, ":")
 	h[sp[0]] = sp[1]
 }
 func (h headerMap) RemoveNameValue(nameValue string) {
-	if h == nil {
-		h = make(headerMap)
-	}
 	sp := strings.Split(nameValue, ":")
 	delete(h, sp[0])
 }

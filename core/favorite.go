@@ -32,6 +32,15 @@ func loadFavorite() (Favorite, error) {
 		return favorite, err
 	}
 
+	for i, v :=  range favorite.Request {
+		if v.Body == nil {
+			favorite.Request[i].Body = make([]byte, 0)
+		}
+		if v.Headers == nil {
+			favorite.Request[i].Headers = make(headerMap)
+		}
+	}
+
 	return favorite, nil
 }
 
